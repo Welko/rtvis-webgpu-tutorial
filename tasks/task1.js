@@ -10,13 +10,16 @@ DEVICE = await ADAPTER.requestDevice();
 const shader = SHADERS.add;
 
 // Define the data we want to use
-const data = new Uint32Array([1, 2, 3, 4]);
+const data = new Float32Array([1, 2, 3, 4]);
 
 // Create GPU buffer with some data
 const buffer = DEVICE.createBuffer({
     size: 4 * data.BYTES_PER_ELEMENT,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true
 });
+new Float32Array(buffer.getMappedRange()).set(data);
+buffer.unmap();
 
 // Create the GPU pipeline to run our shader
 const pipeline = DEVICE.createComputePipeline({
@@ -58,8 +61,9 @@ const commandEncoder = DEVICE.createCommandEncoder();
     });
     commandEncoder.copyBufferToBuffer(buffer, 0, resultBuffer, 0, 4 * data.BYTES_PER_ELEMENT);
     DEVICE.queue.submit([commandEncoder.finish()]);
-    const resultData = await resultBuffer.mapReadAsync();
-    console.log(buffer, new Uint32Array(resultData));
+    await resultBuffer.mapAsync(GPUMapMode.READ);
+    const resultData = new Float32Array(resultBuffer.getMappedRange());
+    console.log(data, new Float32Array(resultData));
 }
 DEVICE.queue.submit([commandEncoder.finish()]);
 
