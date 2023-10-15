@@ -45,26 +45,25 @@ const bindGroup = DEVICE.createBindGroup({
 ]
 });
 
-const commandEncoder = DEVICE.createCommandEncoder();
-{
-    // Run our shader
-    const computePass = commandEncoder.beginComputePass();
-    computePass.setPipeline(pipeline);
-    computePass.setBindGroup(0, bindGroup);
-    computePass.dispatchWorkgroups(1);
-    computePass.end();
+// Run our shader
+const runShaderCommandEncoder = DEVICE.createCommandEncoder();
+const computePass = runShaderCommandEncoder.beginComputePass();
+computePass.setPipeline(pipeline);
+computePass.setBindGroup(0, bindGroup);
+computePass.dispatchWorkgroups(1);
+computePass.end();
+DEVICE.queue.submit([runShaderCommandEncoder.finish()]);
 
-    // Read the result back
-    const resultBuffer = DEVICE.createBuffer({
-        size: 4 * data.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-    });
-    commandEncoder.copyBufferToBuffer(buffer, 0, resultBuffer, 0, 4 * data.BYTES_PER_ELEMENT);
-    DEVICE.queue.submit([commandEncoder.finish()]);
-    await resultBuffer.mapAsync(GPUMapMode.READ);
-    const resultData = new Float32Array(resultBuffer.getMappedRange());
-    console.log(data, new Float32Array(resultData));
-}
-DEVICE.queue.submit([commandEncoder.finish()]);
+// Read the result back
+const readDataCommandEncoder = DEVICE.createCommandEncoder();
+const resultBuffer = DEVICE.createBuffer({
+    size: 4 * data.BYTES_PER_ELEMENT,
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+});
+readDataCommandEncoder.copyBufferToBuffer(buffer, 0, resultBuffer, 0, 4 * data.BYTES_PER_ELEMENT);
+DEVICE.queue.submit([readDataCommandEncoder.finish()]);
+await resultBuffer.mapAsync(GPUMapMode.READ);
+const resultData = new Float32Array(resultBuffer.getMappedRange());
+console.log(data, new Float32Array(resultData));
 
 };
