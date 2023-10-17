@@ -9,7 +9,7 @@ const shader = SHADERS.image;
 const map = await LOADER.loadMap();
 
 // Set up the texture to draw
-const image = map.images.satellite;
+const image = map.images.outdoors;
 const texture = DEVICE.createTexture({
     size: [image.width, image.height],
     format: "rgba8unorm",
@@ -47,9 +47,6 @@ const pipeline = DEVICE.createRenderPipeline({
             }
         ]
     },
-    primitive: {
-        topology: "triangle-strip"
-    }
 });
 
 // Create GPU bindings to the buffers
@@ -85,8 +82,10 @@ const renderPass = commandEncoder.beginRenderPass({
 });
 renderPass.setPipeline(pipeline);
 renderPass.setBindGroup(0, bindGroup);
-renderPass.draw(4); // 4 vertices - our quad
+renderPass.draw(6); // 4 vertices - our quad
 renderPass.end();
 DEVICE.queue.submit([commandEncoder.finish()]);
+
+GLOBAL.task3 = {pipeline, bindGroup};
 
 }

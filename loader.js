@@ -54,8 +54,14 @@ baumkatogdCsvColumnEnum: {
     // Automatically generated based on the order of the elements in column list (see the end of this file)
 },
 
-loadTrees: async () => {
-    const csv = await LOADER.loadString(LOADER.serverUrl + "/data/BAUMKATOGD-100.csv");
+/**
+ * @param {boolean} lots True if we should load LOTS OF TREES (219,378 of them)
+ *                       False (default) loads only 100 trees
+ * @returns {TreeStore}
+ */
+loadTrees: async (lots=false) => {
+    const file = `/data/BAUMKATOGD-${lots?219378:100}.csv`;
+    const csv = await LOADER.loadString(LOADER.serverUrl + file);
     const csvLines = csv.split("\n");
     
     // Verify if all columns are present

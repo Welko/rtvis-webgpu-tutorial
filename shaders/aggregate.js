@@ -5,11 +5,11 @@ struct TreeInfo {
     treeHeightCategory: u32,
     crownDiameterCategory: u32,
     districtNumber: u32,
-    circumferenceAt1mInCm: u32
+    circumferenceAt1mInCm: u32,
 };
 
 struct AggregatedValues {
-    districtNumberOccurrences: array<atomic<u32>, 23>
+    districtNumberOccurrences: array<atomic<u32>, 23>,
 };
 
 @group(0) @binding(0) var<storage, read> treeInfo: array<TreeInfo>;

@@ -27,15 +27,17 @@
 <script src="tasks/task1.js"></script>
 <script src="tasks/task2.js"></script>
 <script src="tasks/task3.js"></script>
+<script src="tasks/task4.js"></script>
 
 <!-- Shaders -->
 <script src="shaders/add.js"></script>
 <script src="shaders/aggregate.js"></script>
 <script src="shaders/image.js"></script>
+<script src="shaders/markers.js"></script>
 
 <script>
     // Declare global variables
-    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT;
+    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT, GLOBAL={};
 
     window.addEventListener("load", async () => {
         // Initialize GUI
@@ -59,9 +61,9 @@
             format: GPU.getPreferredCanvasFormat(),
         });
 
-        // Execute all tasks
+        // Execute task(s)
         (async() => {
-            const tasks = Object.entries(window)
+            let tasks = Object.entries(window)
                 .filter(([key, task]) => key.startsWith("task"))
                 .map(([key, task]) => [parseInt(key.substring(4)), key, task])
                 .filter(([number, key, task]) => !isNaN(number))
