@@ -1,3 +1,11 @@
+/*
+
+Task 1: WebGPU compute shader basics
+
+TODO
+
+*/
+
 async function task1() {
 
 console.log('task1');
