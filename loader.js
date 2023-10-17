@@ -13,7 +13,7 @@ loadString: async (url) => {
 },
 
 loadJson: async (url) => {
-    return JSON.parse(LOADER.loadString(url));
+    return JSON.parse(await LOADER.loadString(url));
 },
 
 loadImage: async (url) => {
@@ -77,6 +77,9 @@ loadTrees: async () => {
         size: treeStore.getInfoBuffer(),
     };
 
+    // Get map descriptor to calculate the tree positions in the map
+    const map = await LOADER.loadMapDescriptor();
+
     // Parse the CSV lines
     for (let i = 0; i < numTrees; ++i) {
         // Split the line by comma, but ignore commas inside double quotes
@@ -107,6 +110,8 @@ loadTrees: async () => {
 
         // Store the remaining values in the more general data structure
         treeStore.getOtherData()[i] = {
+            latitude: latLon[0],
+            longitude: latLon[1],
             locationId: parseInt(csvValues[LOADER.baumkatogdCsvColumnEnum.OBJECTID]),
             location: csvValues[LOADER.baumkatogdCsvColumnEnum.OBJEKT_STRASSE],
             treeId: parseInt(csvValues[LOADER.baumkatogdCsvColumnEnum.BAUM_ID]),
@@ -121,13 +126,23 @@ loadTrees: async () => {
     return treeStore;
 },
 
-loadMap: async() => {
-    const map = await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
+loadMapDescriptor: async() => {
+    return await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
+},
 
-    await Promise.all(Object.entries(descriptor.maps).forEach(async ([imageKey, imageFile]) => {
+loadMap: async() => {
+    const map = await LOADER.loadMapDescriptor();
+
+    await Promise.all(Object.entries(map.images).map(async ([imageKey, imageFile]) => {
         const image = await LOADER.loadImage(LOADER.serverUrl + "/map/" + imageFile);
         map.images[imageKey] = image;
     }));
+
+    for (const image of Object.values(map.images)) {
+        if (image.width !== image.height) {
+            throw new Error(`Image ${image.src} must be square but is ${image.width}x${image.height}`);
+        }
+    }
 
     return map;
 },
