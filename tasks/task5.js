@@ -1,6 +1,6 @@
-async function task4() {
+async function task5() {
 
-console.log("task4");
+console.log("task5");
 
 // Write some shader code to draw markers for the trees
 const shader = SHADERS.markers;

@@ -90,6 +90,24 @@ class TreeProxy {
         return this.#treeStore.getCoordinatesBuffer[this.#index * 2];
     }
 
+    /**
+     * @deprecated
+     * It's actually not deprecated :)
+     * But needs testing. TODO
+     */
+    getX(mapLatitudeMin, mapLatitudeMax, mapWidth) {
+        return (this.getLatitude() - mapLatitudeMin) / (mapLatitudeMax - mapLatitudeMin) * mapWidth;
+    }
+
+    /**
+     * @deprecated
+     * It's actually not deprecated :)
+     * But needs testing. TODO
+     */
+    getY(mapLongitudeMin, mapLongitudeMax, mapHeight) {
+        return (this.getLongitude() - mapLongitudeMin) / (mapLongitudeMax - mapLongitudeMin) * mapHeight;
+    }
+
     getLongitude() {
         return this.#treeStore.getCoordinatesBuffer[this.#index * 2 + 1];
     }

@@ -86,7 +86,7 @@ const resultData = new Uint32Array(readBuffer.getMappedRange());
 
 // Print the results
 for (let i = 0; i < 23; ++i) {
-    console.log("Number of trees in district " + (i - 8) + ": " + resultData[i]);
+    console.log("Number of trees in district " + (i + 1) + ": " + resultData[i]);
 }
 
 

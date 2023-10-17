@@ -1,5 +1,5 @@
 window.SHADERS = Object.assign(window.SHADERS || {}, {
-    markers: /* wgsl */ `
+    heatmap: /* wgsl */ `
 
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32,
@@ -32,6 +32,10 @@ struct TreeInfo {
     circumferenceAt1mInCm: u32,
 };
 
+struct Cell {
+    count: atomic<u32>,
+};
+
 struct Uniforms {
     mapWidth: f32,
     mapHeight: f32,
@@ -42,11 +46,14 @@ struct Uniforms {
     markerSize: f32,
     unused: f32,
     markerColor: vec4f,
+    gridWidth: u32,
+    gridHeight: u32,
 };
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
 @group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
-@group(0) @binding(2) var<uniform> u: Uniforms;
+@group(0) @binding(2) var<storage, read> grid: array<Cell>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 
 const VERTICES = array<vec2f, 6>(
     vec2f(-1, -1),
@@ -71,7 +78,13 @@ fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     return vec2f(
         (lon - u.mapLongitudeMin) / (u.mapLongitudeMax - u.mapLongitudeMin),
         (lat - u.mapLatitudeMin) / (u.mapLatitudeMax - u.mapLatitudeMin),
-    );
+    ) * 2 - 1;
+}
+
+@compute
+@workgroup_size(64)
+fn compute(@builtin(global_invocation_id) globalId: vec3u) {
+
 }
 
 @vertex
@@ -80,7 +93,7 @@ fn vertex(input: VertexInput) -> VertexOutput {
 
     // Get 2D position of tree
     let latLon = treeCoordinates[treeIndex];
-    let xy = latLonToXY(latLon.lat, latLon.lon) * 2 - 1;
+    let xy = latLonToXY(latLon.lat, latLon.lon);
 
     // Calculate marker position and size
     let vertex = VERTICES[input.vertexIndex % 6] * u.markerSize + xy;

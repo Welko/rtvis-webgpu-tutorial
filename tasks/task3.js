@@ -69,22 +69,26 @@ const minSide = -100 + Math.min(CANVAS.parentNode.clientWidth, CANVAS.parentNode
 CANVAS.width = minSide;
 CANVAS.height = minSide;
 const colorAttachment = {
-    view: CONTEXT.getCurrentTexture().createView(),
+    view: null,
     loadOp: "clear",
     clearValue: {r: 0, g: 0, b: 0, a: 1},
     storeOp: "store"
 };
 
 // Run our shaders
-const commandEncoder = DEVICE.createCommandEncoder();
-const renderPass = commandEncoder.beginRenderPass({
-    colorAttachments: [colorAttachment]
-});
-renderPass.setPipeline(pipeline);
-renderPass.setBindGroup(0, bindGroup);
-renderPass.draw(6); // 4 vertices - our quad
-renderPass.end();
-DEVICE.queue.submit([commandEncoder.finish()]);
+function render() {
+    colorAttachment.view = CONTEXT.getCurrentTexture().createView();
+    const commandEncoder = DEVICE.createCommandEncoder();
+    const renderPass = commandEncoder.beginRenderPass({
+        colorAttachments: [colorAttachment]
+    });
+    renderPass.setPipeline(pipeline);
+    renderPass.setBindGroup(0, bindGroup);
+    renderPass.draw(6); // 6 vertices - one quad
+    renderPass.end();
+    DEVICE.queue.submit([commandEncoder.finish()]);
+}
+render();
 
 GLOBAL.task3 = {pipeline, bindGroup};
 
