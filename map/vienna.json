@@ -1,11 +1,8 @@
 {
-    "name": "Vienna",
-    "latitude": 48.22351,
-    "longitude": 16.36858,
-    "minHeight": 135.4,
-    "maxHeight": 642.9,
-    "waterContours": false,
-    "heightContours": false,
+    "name": "Vienna",       
+    "latitude": { "min": 48.088439, "max": 48.3582339 },
+    "longitude": { "min": 16.1655603, "max": 16.5705245 },
+    "height": { "min": 135.4, "max": 642.9 },
     "zoom": 9.379067342411403,
     "images": {
         "height": "vienna-height.png",
