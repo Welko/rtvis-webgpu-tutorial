@@ -1,14 +1,14 @@
 {
     "name": "Vienna",
-    "longitude": 16.36858,
     "latitude": 48.22351,
+    "longitude": 16.36858,
     "minHeight": 135.4,
     "maxHeight": 642.9,
     "waterContours": false,
     "heightContours": false,
     "zoom": 9.379067342411403,
     "images": {
-        "height": "vienna-heightmap.png",
+        "height": "vienna-height.png",
         "outdoors": "vienna-outdoors.png",
         "satellite": "vienna-satellite.png",
         "streets": "vienna-streets.png"
