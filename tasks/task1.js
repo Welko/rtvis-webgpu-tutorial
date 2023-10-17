@@ -10,10 +10,6 @@ async function task1() {
 
 console.log('task1');
 
-// Initialize WebGPU
-ADAPTER = await navigator.gpu.requestAdapter();
-DEVICE = await ADAPTER.requestDevice();
-
 // Write some shader code
 const shader = SHADERS.add;
 

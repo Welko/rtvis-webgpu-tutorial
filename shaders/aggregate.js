@@ -1,5 +1,5 @@
 window.SHADERS = Object.assign(window.SHADERS || {}, {
-    reduceTrees: /* wgsl */ `
+    aggregate: /* wgsl */ `
 
 struct TreeInfo {
     treeHeightCategory: u32,
@@ -8,13 +8,12 @@ struct TreeInfo {
     circumferenceAt1mInCm: u32
 };
 
-struct ReducedValues {
-    sumHeightCategories: array<atomic<u32>, 9>,
+struct AggregatedValues {
     districtNumberOccurrences: array<atomic<u32>, 23>
 };
 
 @group(0) @binding(0) var<storage, read> treeInfo: array<TreeInfo>;
-@group(0) @binding(1) var<storage, read_write> reducedValues: ReducedValues;
+@group(0) @binding(1) var<storage, read_write> aggregatedValues: AggregatedValues;
 
 @compute
 @workgroup_size(64)
@@ -27,11 +26,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3u) {
 
     // Increment one to district number
     let districtNumber: u32 = treeInfo.districtNumber;
-    atomicAdd(&reducedValues.districtNumberOccurrences[districtNumber - 1], 1);
-
-    // Increment one to height category
-    let heightCategory: u32 = treeInfo.treeHeightCategory;
-    atomicAdd(&reducedValues.sumHeightCategories[heightCategory], 1);
+    atomicAdd(&aggregatedValues.districtNumberOccurrences[districtNumber - 1], 1);
 }
 
 `});

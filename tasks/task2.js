@@ -10,13 +10,11 @@ async function task2() {
 
 console.log('task2');
 
-const heightCategories = ["unknown", "0-5 m", "6-10 m", "11-15 m", "16-20 m", "21-25 m", "26-30 m", "31-35 m", "> 35 m"];
-
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
 const data = await LOADER.loadTrees();
 
-// Get the shader code
-const shader = SHADERS.reduceTrees;
+// Write some shader code
+const shader = SHADERS.aggregate;
 
 // Put the tree data into GPU buffers
 const treeInfoBuffer = DEVICE.createBuffer({
@@ -28,7 +26,7 @@ new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
 treeInfoBuffer.unmap();
 
 // Create the output buffer
-const reducedValuesBuffer = DEVICE.createBuffer({
+const aggregatedValuesBuffer = DEVICE.createBuffer({
     size: 32 * Uint32Array.BYTES_PER_ELEMENT,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
 });
@@ -57,7 +55,7 @@ const bindGroup = DEVICE.createBindGroup({
         {
             binding: 1,
             resource: {
-                buffer: reducedValuesBuffer
+                buffer: aggregatedValuesBuffer
             }
         }
 ]
@@ -81,16 +79,13 @@ const readBuffer = DEVICE.createBuffer({
     size: 32 * Uint32Array.BYTES_PER_ELEMENT,
     usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 });
-readDataCommandEncoder.copyBufferToBuffer(reducedValuesBuffer, 0, readBuffer, 0, 32 * Uint32Array.BYTES_PER_ELEMENT);
+readDataCommandEncoder.copyBufferToBuffer(aggregatedValuesBuffer, 0, readBuffer, 0, 32 * Uint32Array.BYTES_PER_ELEMENT);
 DEVICE.queue.submit([readDataCommandEncoder.finish()]);
 await readBuffer.mapAsync(GPUMapMode.READ);
 const resultData = new Uint32Array(readBuffer.getMappedRange());
 
 // Print the results
-for (let i = 0; i < 9; ++i) {
-    console.log("Number of trees with height category " + heightCategories[i] + ": " + resultData[i]);
-}
-for (let i = 9; i < 32; ++i) {
+for (let i = 0; i < 23; ++i) {
     console.log("Number of trees in district " + (i - 8) + ": " + resultData[i]);
 }
 

@@ -19,6 +19,7 @@ loadJson: async (url) => {
 loadImage: async (url) => {
     return new Promise(resolve => {
         const image = new Image();
+        image.crossOrigin = "anonymous";
         image.addEventListener("load", () => resolve(image));
         image.src = url;
     });
@@ -77,9 +78,6 @@ loadTrees: async () => {
         size: treeStore.getInfoBuffer(),
     };
 
-    // Get map descriptor to calculate the tree positions in the map
-    const map = await LOADER.loadMapDescriptor();
-
     // Parse the CSV lines
     for (let i = 0; i < numTrees; ++i) {
         // Split the line by comma, but ignore commas inside double quotes
@@ -126,16 +124,12 @@ loadTrees: async () => {
     return treeStore;
 },
 
-loadMapDescriptor: async() => {
-    return await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
-},
-
 loadMap: async() => {
-    const map = await LOADER.loadMapDescriptor();
+    const map = await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
 
     await Promise.all(Object.entries(map.images).map(async ([imageKey, imageFile]) => {
         const image = await LOADER.loadImage(LOADER.serverUrl + "/map/" + imageFile);
-        map.images[imageKey] = image;
+        map.images[imageKey] = await createImageBitmap(image);
     }));
 
     for (const image of Object.values(map.images)) {

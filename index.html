@@ -30,22 +30,33 @@
 
 <!-- Shaders -->
 <script src="shaders/add.js"></script>
-<script src="shaders/reduceTrees.js"></script>
+<script src="shaders/aggregate.js"></script>
+<script src="shaders/image.js"></script>
 
 <script>
     // Declare global variables
-    let GUI, CANVAS, ADAPTER, DEVICE;
+    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT;
 
-    window.addEventListener("load", () => {
+    window.addEventListener("load", async () => {
         // Initialize GUI
         GUI = new dat.GUI({ name: document.title });
 
         // Initialize canvas
         CANVAS = document.createElement("canvas");
         document.body.appendChild(CANVAS);
-        window.addEventListener("resize", () => {
-            CANVAS.width = window.innerWidth;
-            CANVAS.height = window.innerHeight;
+
+        // Initialize WebGPU
+        GPU = navigator.gpu;
+        if (!GPU) {
+            alert("WebGPU is not supported in your browser. Please use/update Chrome or Chromium instead.");
+            return;
+        }
+        ADAPTER = await navigator.gpu.requestAdapter();
+        DEVICE = await ADAPTER.requestDevice();
+        CONTEXT = CANVAS.getContext("webgpu");
+        CONTEXT.configure({
+            device: DEVICE,
+            format: GPU.getPreferredCanvasFormat(),
         });
 
         // Execute all tasks
