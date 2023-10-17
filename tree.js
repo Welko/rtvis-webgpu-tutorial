@@ -16,10 +16,10 @@ class TreeStore {
     #coordinatesLatLonBuffer; 
 
     /**
-     * @type {Uint16Array}
+     * @type {Uint32Array}
      * Layout: [
-     *          treeHeight0, crownDiameter0, district0, circumference0,
-     *          treeHeight1, crownDiameter1, district1, circumference1,
+     *          treeHeightCategory0, crownDiameterCategory0, districtNumber0, circumferenceAt1mInCm0,
+     *          treeHeightCategory1, crownDiameterCategory1, districtNumber0, circumferenceAt1mInCm1,
      *          ...
      *         ]
      */
@@ -45,7 +45,7 @@ class TreeStore {
     constructor(numTrees) {
         this.#numTrees = numTrees;
         this.#coordinatesLatLonBuffer = new Float32Array(numTrees * 2);
-        this.#infoBuffer = new Uint16Array(numTrees * 4);
+        this.#infoBuffer = new Uint32Array(numTrees * 4);
     }
 
     getNumTrees() {

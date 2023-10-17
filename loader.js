@@ -2,10 +2,26 @@ const LOADER = {
 
 serverUrl: "https://raw.githubusercontent.com/Welko/rtvis-webgpu-tutorial/main",
 
-loadString: async (url) => {
+load: async (url) => {
     const response = await fetch(url);
     // TODO: Keep track of loading progress
-    return response.text();
+    return response;
+},
+
+loadString: async (url) => {
+    return (await LOADER.load(url)).text();
+},
+
+loadJson: async (url) => {
+    return JSON.parse(LOADER.loadString(url));
+},
+
+loadImage: async (url) => {
+    return new Promise(resolve => {
+        const image = new Image();
+        image.addEventListener("load", () => resolve(image));
+        image.src = url;
+    });
 },
 
 /**
@@ -103,6 +119,17 @@ loadTrees: async () => {
     }
 
     return treeStore;
+},
+
+loadMap: async() => {
+    const map = await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
+
+    await Promise.all(Object.entries(descriptor.maps).forEach(async ([imageKey, imageFile]) => {
+        const image = await LOADER.loadImage(LOADER.serverUrl + "/map/" + imageFile);
+        map.images[imageKey] = image;
+    }));
+
+    return map;
 },
 
 };

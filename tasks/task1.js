@@ -64,14 +64,14 @@ DEVICE.queue.submit([runShaderCommandEncoder.finish()]);
 
 // Read the result back
 const readDataCommandEncoder = DEVICE.createCommandEncoder();
-const resultBuffer = DEVICE.createBuffer({
+const readBuffer = DEVICE.createBuffer({
     size: 4 * data.BYTES_PER_ELEMENT,
     usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 });
-readDataCommandEncoder.copyBufferToBuffer(buffer, 0, resultBuffer, 0, 4 * data.BYTES_PER_ELEMENT);
+readDataCommandEncoder.copyBufferToBuffer(buffer, 0, readBuffer, 0, 4 * data.BYTES_PER_ELEMENT);
 DEVICE.queue.submit([readDataCommandEncoder.finish()]);
-await resultBuffer.mapAsync(GPUMapMode.READ);
-const resultData = new Float32Array(resultBuffer.getMappedRange());
+await readBuffer.mapAsync(GPUMapMode.READ);
+const resultData = new Float32Array(readBuffer.getMappedRange());
 console.log(data, new Float32Array(resultData));
 
 };
