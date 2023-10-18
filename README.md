@@ -65,12 +65,6 @@ async initializeWebGPU() {
 Then, we upload some data to the GPU. For now, a fixed `[1, 2, 3, 4]` array is good enough.
 
 ```javascript
-// CPU Data
-data;
-
-// GPU Data
-buffer;
-
 async initializeBuffers() {
     this.data = new Float32Array([1, 2, 3, 4]);
     this.buffer = this.device.createBuffer({ // Create GPU buffer
