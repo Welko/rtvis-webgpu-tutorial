@@ -39,18 +39,15 @@
 <script src="tasks/tasks.js"></script>
 
 <script>
-    // Declare global variables
-    let GUI, CANVAS;
-
     window.addEventListener("load", async () => {
         // Initialize GUI
-        GUI = new dat.GUI({ name: document.title });
+        const gui = new dat.GUI({ name: document.title });
 
         // Initialize canvas
-        CANVAS = document.createElement("canvas");
-        document.body.appendChild(CANVAS);
+        const canvas = document.createElement("canvas");
+        document.body.appendChild(canvas);
 
-        TASKS.runAll();
+        new Tasks(gui, canvas).runAll();
     });
 </script>
 

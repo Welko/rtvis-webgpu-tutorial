@@ -10,15 +10,17 @@ async function task4() {
 
 console.log("task4");
 
-const DEVICE = TASKS.device;
-const GPU = TASKS.gpu;
-const CONTEXT = TASKS.context;
+const DEVICE = Tasks.device;
+const GPU = Tasks.gpu;
+const CONTEXT = Tasks.context;
+const CANVAS = Tasks.canvas;
+const GUI = Tasks.gui;
 
 // Write some shader code to draw markers for the trees
 const shader = SHADERS.markers;
 
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
-const data = TASKS.lotsOfTrees;
+const data = Tasks.lotsOfTrees;
 
 // Put the tree coordinates into a GPU buffer
 const treeCoordinatesBuffer = DEVICE.createBuffer({
@@ -39,7 +41,7 @@ new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
 treeInfoBuffer.unmap();
 
 // Load the map
-const map = TASKS.map;
+const map = Tasks.map;
 
 // Set up the uniforms
 const uniforms = {

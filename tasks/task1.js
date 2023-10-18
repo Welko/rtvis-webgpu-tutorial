@@ -10,7 +10,7 @@ async function task1() {
 
 console.log('task1');
 
-const DEVICE = TASKS.device;
+const DEVICE = Tasks.device;
 
 // Write some shader code
 const shader = SHADERS.add;

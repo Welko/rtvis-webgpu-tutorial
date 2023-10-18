@@ -12,44 +12,65 @@ Just paste this into the HTML file:
 
 */
 
-const TASKS = {
+class Tasks {
 
-    tasks: Object.entries(window)
+    static tasks = Object.entries(window)
             .filter(([key, task]) => key.startsWith("task"))
             .map(([key, task]) => [parseInt(key.substring(4)), key, task])
             .filter(([number, key, task]) => !isNaN(number))
-            .sort(([number1, key1, task1], [number2, key2, task2]) => number1 - number2),
+            .sort(([number1, key1, task1], [number2, key2, task2]) => number1 - number2);
 
-    runOne: async (number, key, task) =>  {
-        if (!TASKS.gpu) {
-            TASKS.gpu = navigator.gpu;
-            if (!GPU) {
-                alert("WebGPU is not supported in your browser. Please use/update Chrome or Edge.");
-                return false;
+    // Loaded if needed as soon as TASKS.runOne() is called
+    static gui = null;
+    static canvas = null;
+    static gpu = null;
+    static adapter = null;
+    static device = null;
+    static context = null;
+    static trees = null;
+    static lotsOfTrees = null;
+    static map = null;
+    static initialized = null;
+
+    constructor(gui, canvas) {
+        Tasks.initialized = new Promise(async (resolve, reject) => {
+            Tasks.gui = gui;
+            Tasks.canvas = canvas;
+            if (!Tasks.gpu) {
+                Tasks.gpu = navigator.gpu;
+                if (!Tasks.gpu) {
+                    alert("WebGPU is not supported in your browser. Please use/update Chrome or Edge.");
+                    return false;
+                }
             }
-        }
-        if (!TASKS.adapter) {
-            TASKS.adapter = await TASKS.gpu.requestAdapter();
-        }
-        if (!TASKS.device) {
-            TASKS.device = await TASKS.adapter.requestDevice();
-        }
-        if (!TASKS.context) {
-            TASKS.context = CANVAS.getContext("webgpu");
-            TASKS.context.configure({
-                device: TASKS.device,
-                format: TASKS.gpu.getPreferredCanvasFormat()
-            });
-        }
-        if (!TASKS.trees) {
-            TASKS.trees = await LOADER.loadTrees();
-        }
-        if (!TASKS.lotsOfTrees) {
-            TASKS.lotsOfTrees = await LOADER.loadTrees(true);
-        }
-        if (!TASKS.map) {
-            TASKS.map = await LOADER.loadMap();
-        }
+            if (!Tasks.adapter) {
+                Tasks.adapter = await Tasks.gpu.requestAdapter();
+            }
+            if (!Tasks.device) {
+                Tasks.device = await Tasks.adapter.requestDevice();
+            }
+            if (!Tasks.context) {
+                Tasks.context = canvas.getContext("webgpu");
+                Tasks.context.configure({
+                    device: Tasks.device,
+                    format: Tasks.gpu.getPreferredCanvasFormat()
+                });
+            }
+            if (!Tasks.trees) {
+                Tasks.trees = await LOADER.loadTrees();
+            }
+            if (!Tasks.lotsOfTrees) {
+                Tasks.lotsOfTrees = await LOADER.loadTrees(true);
+            }
+            if (!Tasks.map) {
+                Tasks.map = await LOADER.loadMap();
+            }
+            resolve();
+        });
+    }
+
+    async runOne(number, key, task) {
+        await Tasks.initialized;
         try {
             await task();
         } catch (e) {
@@ -59,29 +80,20 @@ const TASKS = {
             return false;
         }
         return true;
-    },
+    }
     
-    runAll: async () => {
-        for (const [number, key, task] of TASKS.tasks) {
-            const noErrors = await TASKS.runOne(number, key, task);
+    async runAll() {
+        for (const [number, key, task] of Tasks.tasks) {
+            const noErrors = await this.runOne(number, key, task);
             if (!noErrors) {
                 break;
             }
         }
-    },
+    }
 
-    runLast: async () => {
-        const [number, key, task] = TASKS.tasks[TASKS.tasks.length - 1];
-        await TASKS.runOne(number, key, task);
-    },
-
-    // Loaded if needed as soon as TASKS.runOne() is called
-    gpu: null,
-    adapter: null,
-    device: null,
-    context: null,
-    trees: null, 
-    lotsOfTrees: null,
-    map: null,
+    async runlast() {
+        const [number, key, task] = Tasks.tasks[Tasks.tasks.length - 1];
+        await this.runOne(number, key, task);
+    };
 
 };
