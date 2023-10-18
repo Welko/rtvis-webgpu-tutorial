@@ -25,9 +25,6 @@ class Tutorial {
 
     // WebGPU
     gpu;
-    adapter;
-    device;
-    context;
 
     async initializeWebGPU() {
         if (!this.gpu) {
@@ -39,8 +36,6 @@ class Tutorial {
             }
             console.log("Hooray! WebGPU is supported in your browser!");
         }
-        this.adapter = await this.gpu.requestAdapter();
-        this.device = await this.adapter.requestDevice();
     }
 
     async initializeBuffers() {
