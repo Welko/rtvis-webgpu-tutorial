@@ -16,19 +16,9 @@
 <!-- GUI -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
 
-<!-- Web Mercator -->
-<script src=" https://cdn.jsdelivr.net/npm/@mapbox/sphericalmercator@1.2.0/sphericalmercator.min.js "></script>
-
 <!-- Util -->
 <script src="tree.js"></script>
 <script src="loader.js"></script>
-
-<!-- Tasks -->
-<script src="tasks/task1.js"></script>
-<script src="tasks/task2.js"></script>
-<script src="tasks/task3.js"></script>
-<script src="tasks/task4.js"></script>
-<script src="tasks/task5.js"></script>
 
 <!-- Shaders -->
 <script src="shaders/add.js"></script>
@@ -38,9 +28,19 @@
 <script src="shaders/heatmapCompute.js"></script>
 <script src="shaders/heatmapRender.js"></script>
 
+<!-- Tutorial -->
+<script src="tutorial.js"></script>
+
+<script src="tasks/task1.js"></script>
+<script src="tasks/task2.js"></script>
+<script src="tasks/task3.js"></script>
+<script src="tasks/task4.js"></script>
+<script src="tasks/task5.js"></script>
+<script src="tasks/tasks.js"></script>
+
 <script>
     // Declare global variables
-    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT, GLOBAL={};
+    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT;
 
     window.addEventListener("load", async () => {
         // Initialize GUI
@@ -64,24 +64,7 @@
             format: GPU.getPreferredCanvasFormat(),
         });
 
-        // Execute task(s)
-        (async() => {
-            let tasks = Object.entries(window)
-                .filter(([key, task]) => key.startsWith("task"))
-                .map(([key, task]) => [parseInt(key.substring(4)), key, task])
-                .filter(([number, key, task]) => !isNaN(number))
-                .sort(([number1, key1, task1], [number2, key2, task2]) => number1 - number2);
-            for (const [number, key, task] of tasks) {
-                try {
-                    await task();
-                } catch (e) {
-                    const message = `Error in task ${number} ("${key}")`;
-                    console.error(message, e);
-                    alert(message + ": See console for details");
-                    break;
-                }
-            }
-        })();
+        TASKS.runAll();
     });
 </script>
 

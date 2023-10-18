@@ -102,7 +102,7 @@ fn vertex(input: VertexInput) -> VertexOutput {
     // Map color based on tree count
     let maxCount = grid.maxTreeCount;
     let count = cells[cellIndex].treeCount;
-    let color1 = u.markerColor;
+    let color1 = vec4f(u.markerColor.rgb, 1);
     let color0 = vec4f(color1.rgb, color1.a * 0.2);
 
     // Linear blending

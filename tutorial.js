@@ -1,0 +1,7 @@
+class Tutorial {
+
+    constructor() {
+        
+    }
+
+}

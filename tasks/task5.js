@@ -1,3 +1,11 @@
+/*
+
+Task 5: TODO
+
+TODO
+
+*/
+
 async function task5() {
 
 console.log("task5");
@@ -9,30 +17,41 @@ const shaders = {
 }
 
 // Load the map
-const map = GLOBAL.map;
+const map = TASKS.map;
+
+// Load the data
+const data = TASKS.lotsOfTrees;
+
+// Put the tree coordinates into a GPU buffer
+const treeCoordinatesBuffer = DEVICE.createBuffer({
+    size: data.getCoordinatesLatLonBuffer().byteLength,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: true
+});
+new Float32Array(treeCoordinatesBuffer.getMappedRange()).set(data.getCoordinatesLatLonBuffer());
+treeCoordinatesBuffer.unmap();
+
+// Put the tree info into a GPU buffer
+const treeInfoBuffer = DEVICE.createBuffer({
+    size: data.getInfoBuffer().byteLength,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: true
+});
+new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
+treeInfoBuffer.unmap();
 
 // Set up the uniforms
 const GRID_WIDTH_MAX = 100;
 const GRID_HEIGHT_MAX = 100;
-const uniforms = GLOBAL.uniforms;
-uniforms.gridWidth = 50;
-uniforms.gridHeight = 50;
-uniforms.mouseX = -100000;
-uniforms.mouseY = -100000;
-
-// Create a buffer to store the grid cells
-const cellsBuffer = DEVICE.createBuffer({
-    size: 10 * GRID_WIDTH_MAX * GRID_HEIGHT_MAX * Uint32Array.BYTES_PER_ELEMENT,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-});
-
-// Create a buffer to store the grid aggregate values
-const gridBuffer = DEVICE.createBuffer({
-    size: 1 * Uint32Array.BYTES_PER_ELEMENT,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-});
-
-// Create the GPU uniforms buffer
+const uniforms = {
+    markerSize: 0.01,
+    markerColor: [117, 107, 177],
+    markerAlpha: 1,
+    gridWidth: 50,
+    gridHeight: 50,
+    mouseX: NaN,
+    mouseY: NaN,
+};
 const uniformsArray = new Float32Array([
     map.width,
     map.height,
@@ -56,6 +75,18 @@ const uniformsBuffer = DEVICE.createBuffer({
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
 DEVICE.queue.writeBuffer(uniformsBuffer, 0, new Float32Array(uniformsArray));
+
+// Create a buffer to store the grid cells
+const cellsBuffer = DEVICE.createBuffer({
+    size: 10 * GRID_WIDTH_MAX * GRID_HEIGHT_MAX * Uint32Array.BYTES_PER_ELEMENT,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+});
+
+// Create a buffer to store the grid aggregate values
+const gridBuffer = DEVICE.createBuffer({
+    size: 1 * Uint32Array.BYTES_PER_ELEMENT,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+});
 
 // Create the bind group layout for the compute stage
 const computeBindGroupLayout = DEVICE.createBindGroupLayout({
@@ -146,8 +177,8 @@ const renderPipeline = DEVICE.createRenderPipeline({
 const computeBindGroup = DEVICE.createBindGroup({
     layout: computeBindGroupLayout,
     entries: [
-        { binding: 0, resource: { buffer: GLOBAL.gpuTreeCoordinatesBuffer } },
-        { binding: 1, resource: { buffer: GLOBAL.gpuTreeInfoBuffer } },
+        { binding: 0, resource: { buffer: treeCoordinatesBuffer} },
+        { binding: 1, resource: { buffer: treeInfoBuffer } },
         { binding: 2, resource: { buffer: cellsBuffer } },
         { binding: 3, resource: { buffer: gridBuffer } },
         { binding: 4, resource: { buffer: uniformsBuffer } },
@@ -164,8 +195,66 @@ const renderBindGroup = DEVICE.createBindGroup({
     ]
 });
 
+// Set up the texture to draw
+const image = map.images.outdoors;
+const texture = DEVICE.createTexture({
+    size: [image.width, image.height],
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+});
+DEVICE.queue.copyExternalImageToTexture(
+    {source: image, flipY: true}, // Source
+    {texture: texture}, // Destination
+    [image.width, image.height] // Size
+);
+
+// Create the sampler used to access the texture
+const sampler = DEVICE.createSampler({
+    magFilter: 'linear',
+    minFilter: 'linear'
+});
+
+// Create the GPU pipeline to run our shaders
+const renderMapShaderModule = DEVICE.createShaderModule({
+    code: SHADERS.image
+});
+const renderMapPipeline = DEVICE.createRenderPipeline({
+    layout: "auto",
+    vertex: {
+        module: renderMapShaderModule,
+        entryPoint: "vertex",
+        // buffers: We don't need any vertex buffer :)
+    },
+    fragment: {
+        module: renderMapShaderModule,
+        entryPoint: "fragment",
+        targets: [
+            {
+                format: GPU.getPreferredCanvasFormat()
+            }
+        ]
+    },
+});
+
+// Create GPU bindings to the buffers
+const renderMapBindGroup = DEVICE.createBindGroup({
+    layout: renderMapPipeline.getBindGroupLayout(0),
+    entries: [
+        { binding: 0, resource: texture.createView() },
+        { binding: 1, resource: sampler },
+    ]
+});
+
 // Create the color attachment to draw to
-const colorAttachment = GLOBAL.colorAttachment;
+const minSide = -100 + Math.min(CANVAS.parentNode.clientWidth, CANVAS.parentNode.clientHeight);
+CANVAS.width = minSide;
+CANVAS.height = minSide;
+const colorAttachment = {
+    view: null,
+    loadOp: "clear",
+    clearValue: {r: 0, g: 0, b: 0, a: 0},
+    storeOp: "store"
+};
 
 // Run our shaders
 function render() {
@@ -173,7 +262,7 @@ function render() {
     {
         // Compute pass
         {
-            const numWorkgroupsTrees = Math.ceil(GLOBAL.trees.getNumTrees() / 64);
+            const numWorkgroupsTrees = Math.ceil(data.getNumTrees() / 64);
             const numWorkgroupCells = Math.ceil(uniforms.gridWidth * uniforms.gridHeight / 64);
 
             const computePass = commandEncoder.beginComputePass();
@@ -203,8 +292,8 @@ function render() {
             });
             {
                 // Draw map
-                renderPass.setPipeline(GLOBAL.renderMapPipeline);
-                renderPass.setBindGroup(0, GLOBAL.mapBindGroup);
+                renderPass.setPipeline(renderMapPipeline);
+                renderPass.setBindGroup(0, renderMapBindGroup);
                 renderPass.draw(6); // 6 vertices - one quad
 
                 // Draw heatmap
@@ -311,8 +400,7 @@ async function tooltip(x=undefined, y=undefined) {
 
     // Update tooltip
     const heightCategories = ["unknown", "0-5 m", "6-10 m", "11-15 m", "16-20 m", "21-25 m", "26-30 m", "31-35 m", "> 35 m"];
-    let text = `Cell ${cellIndex}:\n`;
-    text += `Tree count: ${cell.treeCount}\n`;
+    let text = `Tree count: ${cell.treeCount}\n`;
     text += "Height categories:\n";
     text += cell.heightCategoryCount.map((count, index) => {
         return `- ${heightCategories[index]}: ${count}`;

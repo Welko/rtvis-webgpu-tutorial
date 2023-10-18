@@ -11,12 +11,12 @@ async function task2() {
 console.log('task2');
 
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
-const data = await LOADER.loadTrees();
+const data = TASKS.trees;
 
 // Write some shader code
 const shader = SHADERS.aggregate;
 
-// Put the tree data into GPU buffers
+// Put the tree data into a GPU buffer
 const treeInfoBuffer = DEVICE.createBuffer({
     size: data.getInfoBuffer().byteLength,
     usage: GPUBufferUsage.STORAGE,
@@ -88,8 +88,5 @@ const resultData = new Uint32Array(readBuffer.getMappedRange());
 for (let i = 0; i < 23; ++i) {
     console.log("Number of trees in district " + (i + 1) + ": " + resultData[i]);
 }
-
-GLOBAL.trees = data;
-GLOBAL.gpuTreeInfoBuffer = treeInfoBuffer;
 
 }

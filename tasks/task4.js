@@ -1,3 +1,11 @@
+/*
+
+Task 4: TODO
+
+TODO
+
+*/
+
 async function task4() {
 
 console.log("task4");
@@ -6,7 +14,7 @@ console.log("task4");
 const shader = SHADERS.markers;
 
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
-const data = GLOBAL.trees;
+const data = TASKS.lotsOfTrees;
 
 // Put the tree coordinates into a GPU buffer
 const treeCoordinatesBuffer = DEVICE.createBuffer({
@@ -18,10 +26,16 @@ new Float32Array(treeCoordinatesBuffer.getMappedRange()).set(data.getCoordinates
 treeCoordinatesBuffer.unmap();
 
 // Put the tree info into a GPU buffer
-const treeInfoBuffer = GLOBAL.gpuTreeInfoBuffer;
+const treeInfoBuffer = DEVICE.createBuffer({
+    size: data.getInfoBuffer().byteLength,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: true
+});
+new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
+treeInfoBuffer.unmap();
 
 // Load the map
-const map = GLOBAL.map;
+const map = TASKS.map;
 
 // Set up the uniforms
 const uniforms = {
@@ -50,18 +64,18 @@ const uniformsBuffer = DEVICE.createBuffer({
 DEVICE.queue.writeBuffer(uniformsBuffer, 0, new Float32Array(uniformsArray));
 
 // Create the GPU pipeline to run our shaders
-const shaderModule = DEVICE.createShaderModule({
+const renderMarkersShaderModule = DEVICE.createShaderModule({
     code: shader
 });
-const pipeline = DEVICE.createRenderPipeline({
+const renderMarkersPipeline = DEVICE.createRenderPipeline({
     layout: "auto",
     vertex: {
-        module: shaderModule,
+        module: renderMarkersShaderModule,
         entryPoint: "vertex",
         // buffers: We don't need any vertex buffer :)
     },
     fragment: {
-        module: shaderModule,
+        module: renderMarkersShaderModule,
         entryPoint: "fragment",
         targets: [
             {
@@ -84,8 +98,8 @@ const pipeline = DEVICE.createRenderPipeline({
 });
 
 // Create GPU bindings to the buffers
-const bindGroup = DEVICE.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
+const renderMarkersBindGroup = DEVICE.createBindGroup({
+    layout: renderMarkersPipeline.getBindGroupLayout(0),
     entries: [
         { binding: 0, resource: { buffer: treeCoordinatesBuffer } },
         { binding: 1, resource: { buffer: treeInfoBuffer } },
@@ -93,8 +107,66 @@ const bindGroup = DEVICE.createBindGroup({
     ]
 });
 
+// Set up the texture to draw
+const image = map.images.outdoors;
+const texture = DEVICE.createTexture({
+    size: [image.width, image.height],
+    format: "rgba8unorm",
+    usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+});
+DEVICE.queue.copyExternalImageToTexture(
+    {source: image, flipY: true}, // Source
+    {texture: texture}, // Destination
+    [image.width, image.height] // Size
+);
+
+// Create the sampler used to access the texture
+const sampler = DEVICE.createSampler({
+    magFilter: 'linear',
+    minFilter: 'linear'
+});
+
+// Create the GPU pipeline to run our shaders
+const renderMapShaderModule = DEVICE.createShaderModule({
+    code: SHADERS.image
+});
+const renderMapPipeline = DEVICE.createRenderPipeline({
+    layout: "auto",
+    vertex: {
+        module: renderMapShaderModule,
+        entryPoint: "vertex",
+        // buffers: We don't need any vertex buffer :)
+    },
+    fragment: {
+        module: renderMapShaderModule,
+        entryPoint: "fragment",
+        targets: [
+            {
+                format: GPU.getPreferredCanvasFormat()
+            }
+        ]
+    },
+});
+
+// Create GPU bindings to the buffers
+const renderMapBindGroup = DEVICE.createBindGroup({
+    layout: renderMapPipeline.getBindGroupLayout(0),
+    entries: [
+        { binding: 0, resource: texture.createView() },
+        { binding: 1, resource: sampler },
+    ]
+});
+
 // Create the color attachment to draw to
-const colorAttachment = GLOBAL.colorAttachment;
+const minSide = -100 + Math.min(CANVAS.parentNode.clientWidth, CANVAS.parentNode.clientHeight);
+CANVAS.width = minSide;
+CANVAS.height = minSide;
+const colorAttachment = {
+    view: null,
+    loadOp: "clear",
+    clearValue: {r: 0, g: 0, b: 0, a: 0},
+    storeOp: "store"
+};
 
 // Run our shaders
 function render() {
@@ -105,13 +177,13 @@ function render() {
     });
     {
         // Draw map
-        renderPass.setPipeline(GLOBAL.renderMapPipeline);
-        renderPass.setBindGroup(0, GLOBAL.mapBindGroup);
+        renderPass.setPipeline(renderMapPipeline);
+        renderPass.setBindGroup(0, renderMapBindGroup);
         renderPass.draw(6); // 6 vertices - one quad
 
         // Draw markers
-        renderPass.setPipeline(pipeline);
-        renderPass.setBindGroup(0, bindGroup);
+        renderPass.setPipeline(renderMarkersPipeline);
+        renderPass.setBindGroup(0, renderMarkersBindGroup);
         renderPass.draw(6 * data.getNumTrees());
 
         // End
@@ -138,8 +210,5 @@ function updateUniforms() {
 markerSize.onChange(updateUniforms);
 markerColor.onChange(updateUniforms);
 markerAlpha.onChange(updateUniforms);
-
-GLOBAL.gpuTreeCoordinatesBuffer = treeCoordinatesBuffer;
-GLOBAL.uniforms = uniforms;
 
 }

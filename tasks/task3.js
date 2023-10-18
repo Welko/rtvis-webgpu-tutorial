@@ -1,3 +1,11 @@
+/*
+
+Task 3: TODO
+
+TODO
+
+*/
+
 async function task3() {
 
 console.log("task3");
@@ -6,7 +14,7 @@ console.log("task3");
 const shader = SHADERS.image;
 
 // Load the map
-const map = await LOADER.loadMap();
+const map = TASKS.map;
 
 // Set up the texture to draw
 const image = map.images.outdoors;
@@ -83,10 +91,5 @@ function render() {
     DEVICE.queue.submit([commandEncoder.finish()]);
 }
 render();
-
-GLOBAL.map = map;
-GLOBAL.renderMapPipeline = pipeline;
-GLOBAL.mapBindGroup = bindGroup;
-GLOBAL.colorAttachment = colorAttachment;
 
 }
