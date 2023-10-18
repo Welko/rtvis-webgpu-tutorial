@@ -7,7 +7,7 @@ class Tutorial {
         await this.initializePipelines();
         await this.initializeBindGroups();
         await this.initializeGUI();
-        this.render();
+        await this.render();
     }
 
     constructor(gui, canvas) {
@@ -57,11 +57,11 @@ class Tutorial {
 
     }
 
-    async readBuffer() {
+    async readBuffer(buffer, size) {
 
     }
 
-    render() {
+    async render() {
 
     }
 

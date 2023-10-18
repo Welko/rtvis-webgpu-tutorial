@@ -12,11 +12,11 @@ console.log('task1');
 
 const DEVICE = Tasks.device;
 
-// Write some shader code
-const shader = SHADERS.add;
-
 // Define the data we want to use
 const data = new Float32Array([1, 2, 3, 4]);
+
+// Write some shader code
+const shader = SHADERS.add;
 
 // Create GPU buffer with some data
 const buffer = DEVICE.createBuffer({
@@ -70,6 +70,7 @@ readDataCommandEncoder.copyBufferToBuffer(buffer, 0, readBuffer, 0, 4 * data.BYT
 DEVICE.queue.submit([readDataCommandEncoder.finish()]);
 await readBuffer.mapAsync(GPUMapMode.READ);
 const resultData = new Float32Array(readBuffer.getMappedRange());
+readBuffer.destroy();
 console.log(data, new Float32Array(resultData));
 
 };
