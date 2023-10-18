@@ -109,11 +109,11 @@ class TreeProxy {
     }
 
     getLongitude() {
-        return this.#treeStore.getCoordinatesBuffer[this.#index * 2 + 1];
+        return this.#treeStore.getCoordinatesBuffer()[this.#index * 2 + 1];
     }
 
     getTotalHeightCategory() {
-        return this.#treeStore.getInfoBuffer[this.#index * 4];
+        return this.#treeStore.getInfoBuffer()[this.#index * 4];
     }
 
     getTotalHeightRange() {
@@ -129,11 +129,11 @@ class TreeProxy {
     }
 
     getDistrictNumber() {
-        return this.#treeStore.getInfoBuffer[this.#index * 4 + 2];
+        return this.#treeStore.getInfoBuffer()[this.#index * 4 + 2];
     }
 
     getTrunkCircumferenceAt1m() {
-        return this.#treeStore.getInfoBuffer[this.#index * 4 + 3];
+        return this.#treeStore.getInfoBuffer()[this.#index * 4 + 3];
     }
 
     /** @returns {number} The location ID (OBJEKT_ID, e.g. "576868130") */

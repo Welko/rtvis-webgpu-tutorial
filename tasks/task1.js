@@ -27,12 +27,6 @@ class Tutorial {
     adapter;
     device;
 
-    // CPU Data
-    data;
-
-    // GPU Data
-    buffer;
-
     async initializeWebGPU() {
         if (!this.gpu) {
             this.gpu = navigator.gpu;
@@ -92,40 +86,45 @@ class Tutorial {
 
     }
 
-    async readBuffer(buffer, size) {
+    async readBuffer(gpuBuffer, outputArray) {
         // This buffer can be read on the CPU because of MAP_READ
         const readBuffer = this.device.createBuffer({
-            size: size,
+            size: outputArray.byteLength,
             usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
         });
 
         // Copy from 'buffer' to 'readBuffer'
         const commandEncoder = this.device.createCommandEncoder();
-        commandEncoder.copyBufferToBuffer(buffer, 0, readBuffer, 0, size);
+        commandEncoder.copyBufferToBuffer(gpuBuffer, 0, readBuffer, 0, outputArray.byteLength);
         this.device.queue.submit([commandEncoder.finish()]);
 
         // Map the GPU data to the CPU
         await readBuffer.mapAsync(GPUMapMode.READ);
 
-        // Read the data. Use slice() to copy it so that we can destroy the buffer
-        const resultData = new Float32Array(readBuffer.getMappedRange()).slice();
+        // Read the data.
+        const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+
+        // Copy the data to the output array
+        outputArray.set(resultData);
 
         // The read buffer is no longer needed
         readBuffer.destroy();
 
-        return resultData;
+        return outputArray;
     }
 
     async render() {
         const commandEncoder = this.device.createCommandEncoder();
-        const computePass = commandEncoder.beginComputePass();
-        computePass.setPipeline(this.pipeline);
-        computePass.setBindGroup(0, this.bindGroup);
-        computePass.dispatchWorkgroups(1);
-        computePass.end();
+        {
+            const computePass = commandEncoder.beginComputePass();
+            computePass.setPipeline(this.pipeline);
+            computePass.setBindGroup(0, this.bindGroup);
+            computePass.dispatchWorkgroups(1); // Only one workgroup! (64 threads, as defined in the shader)
+            computePass.end();
+        }
         const commandBuffer = commandEncoder.finish();
         this.device.queue.submit([commandBuffer]);
-        console.log(await this.readBuffer(this.buffer, this.data.byteLength));
+        console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
     }
 
 }

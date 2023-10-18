@@ -25,7 +25,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3u) {
     let treeInfo: TreeInfo = treeInfo[globalId.x];
 
     // Increment one to district number
-    let districtNumber: u32 = treeInfo.districtNumber;
+    let districtNumber = treeInfo.districtNumber;
     atomicAdd(&aggregatedValues.districtNumberOccurrences[districtNumber - 1], 1);
 }
 

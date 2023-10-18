@@ -4,6 +4,15 @@
 
 by Lucas Melo
 
+- [Real Time Visualization WebGPU Tutorial](#real-time-visualization-webgpu-tutorial)
+  - [Introduction](#introduction)
+  - [Task 0 - Initialize WebGPU](#task-0---initialize-webgpu)
+  - [Task 1 - Compute Shader Basics](#task-1---compute-shader-basics)
+  - [Task 2 - Processing Real Data](#task-2---processing-real-data)
+  - [Task 3 - Render an Image](#task-3---render-an-image)
+
+## Introduction
+
 **Welcome to the Real Time Visualization WebGPU Tutorial!**
 
 This is a 90 minute tutorial. It consists of 5 tasks. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
@@ -171,12 +180,16 @@ There is last thing left before executing our pipeline. The pipeline with its bi
 ```javascript
 render() {
     const commandEncoder = this.device.createCommandEncoder();
-    const computePass = commandEncoder.beginComputePass();
-    computePass.setPipeline(this.pipeline);
-    computePass.setBindGroup(0, this.bindGroup);
-    computePass.dispatchWorkgroups(1);
-    computePass.end();
+    {
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(this.pipeline);
+        computePass.setBindGroup(0, this.bindGroup);
+        computePass.dispatchWorkgroups(1); // Only one workgroup! (64 threads, as defined in the shader)
+        computePass.end();
+    }
     const commandBuffer = commandEncoder.finish();
+    this.device.queue.submit([commandBuffer]);
+    console.log(await this.readBuffer(this.buffer, this.data.byteLength));
 }
 ```
 
@@ -198,28 +211,31 @@ The solution: We must create a separate buffer to copy our data into.
 In this part, we skip the details and encourage you to understand it in more detail on your own at another time.
 
 ```javascript
-async readBuffer(buffer, size) {
+async readBuffer(gpuBuffer, outputArray) {
     // This buffer can be read on the CPU because of MAP_READ
     const readBuffer = this.device.createBuffer({
-        size: size,
+        size: outputArray.byteLength,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
     });
 
     // Copy from 'buffer' to 'readBuffer'
     const commandEncoder = this.device.createCommandEncoder();
-    commandEncoder.copyBufferToBuffer(buffer, 0, readBuffer, 0, size);
+    commandEncoder.copyBufferToBuffer(gpuBuffer, 0, readBuffer, 0, outputArray.byteLength);
     this.device.queue.submit([commandEncoder.finish()]);
 
     // Map the GPU data to the CPU
     await readBuffer.mapAsync(GPUMapMode.READ);
 
-    // Read the data. Use slice() to copy it so that we can destroy the buffer
-    const resultData = new Float32Array(readBuffer.getMappedRange()).slice();
+    // Read the data.
+    const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+
+    // Copy the data to the output array
+    outputArray.set(resultData);
 
     // The read buffer is no longer needed
     readBuffer.destroy();
 
-    return resultData;
+    return outputArray;
 }
 ```
 
@@ -230,10 +246,141 @@ The last thing left to do is print our data on the console!
 ```javascript
 async render() {
     ...
-    console.log(await this.readBuffer(this.buffer, this.data.byteLength));
+    console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
 }
 ```
 
 And we're done!
 
 ![Result of the compute shader executed in task 1](images/task1.png)
+
+## Task 2 - Processing Real Data
+
+We start by loading some real data. The data we use here is from the [
+Baumkataster bzw. Bäume Standorte Wien](https://www.data.gv.at/katalog/dataset/c91a4635-8b7d-43fe-9b27-d95dec8392a7), a dataset of trees in Vienna.
+
+The data can be conveniently loaded with the provided `LOADER`. We may completely replace the old data and buffers with the new ones.
+
+```javascript
+// CPU Data
+trees;
+
+async initializeBuffers() {
+    this.trees = await LOADER.loadTrees(); // Load 100 trees
+
+    // TreeInfo
+    this.buffer = this.device.createBuffer({
+        size: this.trees.getInfoBuffer().byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        mappedAtCreation: true,
+    });
+    // Attention! Now it's a Uint32Array, not float :)
+    new Uint32Array(this.buffer.getMappedRange()).set(this.trees.getInfoBuffer()); // Write to the buffer
+    this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
+}
+```
+
+If we now refresh the page, you'll notice that the first 64 values of our buffer are at least 100, as expected.
+
+Now we do something more interesting than that. Let us count the number of trees for each district in Vienna. For that, we write a new shader.
+
+Open `shaders/aggregate.js`. 
+
+Note that some things are already set up for you. Most importantly, our buffer bindings:
+
+```wgsl
+struct AggregatedValues {
+    // Array of 23 atomic unsigned integers (one for each district in Vienna)
+    districtNumberOccurrences: array<atomic<u32>, 23>,
+};
+
+// Our storage buffer at binding 0 now is of type TreeInfo (see the TreeInfo struct)
+@group(0) @binding(0) var<storage, read> treeInfo: array<TreeInfo>;
+
+// A second storage buffer is added, where our (atomic) counts are stored
+// We need to create a new buffer for this!
+@group(0) @binding(1) var<storage, read_write> aggregatedValues: AggregatedValues;
+```
+
+The only thing left to add is accessing the tree info for each tree and incrementing the count of its district.
+
+```wgsl
+let treeInfo: TreeInfo = treeInfo[globalId.x];
+
+// Increment one to district number
+let districtNumber = treeInfo.districtNumber;
+atomicAdd(&aggregatedValues.districtNumberOccurrences[districtNumber - 1], 1);
+```
+
+Back to Javascript, creating the buffer that we will use for the aggregated values is simple, since we don't need to initialize its data (it is initialized with zeros).
+
+```javascript
+// GPU Data
+gpuAggregatedValues;
+
+async initializeBuffers() {
+    ...
+    this.gpuAggregatedValues = this.device.createBuffer({
+        size: 23 * Uint32Array.BYTES_PER_ELEMENT, // 23 unsigned integers (one per district in Vienna)
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+    });
+}
+```
+
+With a new **shader** and a new **buffer**, we must also create a new **pipeline** and a new **bind group**.
+
+```javascript
+// Pipelines
+aggregatePipeline;
+
+// Bind Groups
+aggregateBindGroup;
+
+async initializePipelines() {
+    this.aggregatePipeline = this.device.createComputePipeline({
+        layout: "auto",
+        compute: {
+            module: this.device.createShaderModule({ code: SHADERS.aggregate }),
+            entryPoint: "main"
+        }
+    });
+}
+
+async initializeBindGroups() {
+    this.aggregateBindGroup = this.device.createBindGroup({
+        layout: this.aggregatePipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: { buffer: this.gpuTreeInfo } },
+            // Now we have a second buffer on binding 1!
+            { binding: 1,  resource: { buffer: this.gpuAggregatedValues } }
+        ]
+    });
+}
+```
+
+Almost done. Now we adjust the number of workgroups we're dispatching. Instead of just one, we calculate it based on how many trees we have.
+
+Don't forget to also rename the pipeline and bind group we're using.
+
+```javascript
+const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
+
+const computePass = commandEncoder.beginComputePass();
+computePass.setPipeline(this.aggregatePipeline);
+computePass.setBindGroup(0, this.aggregateBindGroup);
+computePass.dispatchWorkgroups(numTreeWorkgroups);
+computePass.end();
+```
+
+Finally, we can now print the contents of the aggregates buffer.
+
+```javascript
+console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
+```
+
+You should now see displayed on the console the number of trees counted per district (note that we start at index 0). In the image below, district 9 has 30 trees, district 10 has 0, district 11 has 7, etc.
+
+![Result of the aggregation performed in task 2](images/task2.png)
+
+## Task 3 - Render an Image
+

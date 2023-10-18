@@ -29,7 +29,7 @@ treeInfoBuffer.unmap();
 
 // Create the output buffer
 const aggregatedValuesBuffer = DEVICE.createBuffer({
-    size: 32 * Uint32Array.BYTES_PER_ELEMENT,
+    size: 23 * Uint32Array.BYTES_PER_ELEMENT,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
 });
 
