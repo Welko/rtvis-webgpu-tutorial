@@ -53,14 +53,8 @@ const pipeline = DEVICE.createRenderPipeline({
 const bindGroup = DEVICE.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
-        {
-            binding: 0,
-            resource: texture.createView()
-        },
-        {
-            binding: 1,
-            resource: sampler
-        }
+        { binding: 0, resource: texture.createView() },
+        { binding: 1, resource: sampler },
     ]
 });
 
@@ -90,6 +84,9 @@ function render() {
 }
 render();
 
-GLOBAL.task3 = {pipeline, bindGroup};
+GLOBAL.map = map;
+GLOBAL.renderMapPipeline = pipeline;
+GLOBAL.mapBindGroup = bindGroup;
+GLOBAL.colorAttachment = colorAttachment;
 
 }

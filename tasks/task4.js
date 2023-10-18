@@ -6,7 +6,7 @@ console.log("task4");
 const shader = SHADERS.markers;
 
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
-const data = await LOADER.loadTrees();
+const data = GLOBAL.trees;
 
 // Put the tree coordinates into a GPU buffer
 const treeCoordinatesBuffer = DEVICE.createBuffer({
@@ -18,21 +18,15 @@ new Float32Array(treeCoordinatesBuffer.getMappedRange()).set(data.getCoordinates
 treeCoordinatesBuffer.unmap();
 
 // Put the tree info into a GPU buffer
-const treeInfoBuffer = DEVICE.createBuffer({
-    size: data.getInfoBuffer().byteLength,
-    usage: GPUBufferUsage.STORAGE,
-    mappedAtCreation: true
-});
-new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
-treeInfoBuffer.unmap();
+const treeInfoBuffer = GLOBAL.gpuTreeInfoBuffer;
 
 // Load the map
-const map = await LOADER.loadMap();
+const map = GLOBAL.map;
 
 // Set up the uniforms
 const uniforms = {
     markerSize: 0.01,
-    markerColor: [1, 0, 0, 1],
+    markerColor: [255, 0, 0, 1],
 };
 const uniformsArray = new Float32Array([
     map.width,
@@ -43,7 +37,10 @@ const uniformsArray = new Float32Array([
     map.longitude.max,
     uniforms.markerSize,
     0, // Unused
-    ...uniforms.markerColor, // Marker color
+    uniforms.markerColor[0] / 255, // Marker color (R)
+    uniforms.markerColor[1] / 255, // Marker color (G)
+    uniforms.markerColor[2] / 255, // Marker color (B)
+    uniforms.markerColor[3], // Marker color (A)
 ]);
 const uniformsBuffer = DEVICE.createBuffer({
     size: uniformsArray.length * Float32Array.BYTES_PER_ELEMENT,
@@ -70,9 +67,6 @@ const pipeline = DEVICE.createRenderPipeline({
                 format: GPU.getPreferredCanvasFormat()
             }
         ]
-    },
-    primitive: {
-        topology: "triangle-list" // Optional, defaults to "triangle-list"
     }
 });
 
@@ -80,37 +74,14 @@ const pipeline = DEVICE.createRenderPipeline({
 const bindGroup = DEVICE.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
     entries: [
-        {
-            binding: 0,
-            resource: {
-                buffer: treeCoordinatesBuffer
-            }
-        },
-        {
-            binding: 1,
-            resource: {
-                buffer: treeInfoBuffer
-            }
-        },
-        {
-            binding: 2,
-            resource: {
-                buffer: uniformsBuffer
-            }
-        }
+        { binding: 0, resource: { buffer: treeCoordinatesBuffer } },
+        { binding: 1, resource: { buffer: treeInfoBuffer } },
+        { binding: 2, resource: { buffer: uniformsBuffer } },
     ]
 });
 
 // Create the color attachment to draw to
-const minSide = -100 + Math.min(CANVAS.parentNode.clientWidth, CANVAS.parentNode.clientHeight);
-CANVAS.width = minSide;
-CANVAS.height = minSide;
-const colorAttachment = {
-    view: null,
-    loadOp: "clear",
-    clearValue: {r: 0, g: 0, b: 0, a: 1},
-    storeOp: "store"
-};
+const colorAttachment = GLOBAL.colorAttachment;
 
 // Run our shaders
 function render() {
@@ -121,8 +92,8 @@ function render() {
     });
     {
         // Draw map
-        renderPass.setPipeline(GLOBAL.task3.pipeline);
-        renderPass.setBindGroup(0, GLOBAL.task3.bindGroup);
+        renderPass.setPipeline(GLOBAL.renderMapPipeline);
+        renderPass.setBindGroup(0, GLOBAL.mapBindGroup);
         renderPass.draw(6); // 6 vertices - one quad
 
         // Draw markers
@@ -138,8 +109,9 @@ function render() {
 render();
 
 // Add some sliders to the UI
-const markerSize = GUI.add(uniforms, "markerSize", 0.001, 0.1, 0.001);
-const markerColor = GUI.addColor(uniforms, "markerColor");
+const gui = GUI.addFolder("Task 4");
+const markerSize = gui.add(uniforms, "markerSize", 0.001, 0.1, 0.001);
+const markerColor = gui.addColor(uniforms, "markerColor");
 function updateUniforms() {
     uniformsArray[6] = uniforms.markerSize;
     uniformsArray[8] = uniforms.markerColor[0] / 255;
@@ -151,5 +123,8 @@ function updateUniforms() {
 }
 markerSize.onChange(updateUniforms);
 markerColor.onChange(updateUniforms);
+
+GLOBAL.gpuTreeCoordinatesBuffer = treeCoordinatesBuffer;
+GLOBAL.uniforms = uniforms;
 
 }

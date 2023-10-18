@@ -2,38 +2,37 @@ async function task5() {
 
 console.log("task5");
 
-// Write some shader code to draw markers for the trees
-const shader = SHADERS.markers;
-
-// Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
-const data = await LOADER.loadTrees();
-
-// Put the tree coordinates into a GPU buffer
-const treeCoordinatesBuffer = DEVICE.createBuffer({
-    size: data.getCoordinatesLatLonBuffer().byteLength,
-    usage: GPUBufferUsage.STORAGE,
-    mappedAtCreation: true
-});
-new Float32Array(treeCoordinatesBuffer.getMappedRange()).set(data.getCoordinatesLatLonBuffer());
-treeCoordinatesBuffer.unmap();
-
-// Put the tree info into a GPU buffer
-const treeInfoBuffer = DEVICE.createBuffer({
-    size: data.getInfoBuffer().byteLength,
-    usage: GPUBufferUsage.STORAGE,
-    mappedAtCreation: true
-});
-new Uint32Array(treeInfoBuffer.getMappedRange()).set(data.getInfoBuffer());
-treeInfoBuffer.unmap();
+// Write some shader code to compute the heightmap
+const shaders = {
+    compute: SHADERS.heatmapCompute,
+    render: SHADERS.heatmapRender,
+}
 
 // Load the map
-const map = await LOADER.loadMap();
+const map = GLOBAL.map;
 
 // Set up the uniforms
-const uniforms = {
-    markerSize: 0.01,
-    markerColor: [1, 0, 0, 1],
-};
+const GRID_WIDTH_MAX = 100;
+const GRID_HEIGHT_MAX = 100;
+const uniforms = GLOBAL.uniforms;
+uniforms.gridWidth = 50;
+uniforms.gridHeight = 50;
+uniforms.mouseX = 0;
+uniforms.mouseY = 0;
+
+// Create a buffer to store the grid cells
+const cellsBuffer = DEVICE.createBuffer({
+    size: 10 * GRID_WIDTH_MAX * GRID_HEIGHT_MAX * Uint32Array.BYTES_PER_ELEMENT,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+});
+
+// Create a buffer to store the grid aggregate values
+const gridBuffer = DEVICE.createBuffer({
+    size: 1 * Uint32Array.BYTES_PER_ELEMENT,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+});
+
+// Create the GPU uniforms buffer
 const uniformsArray = new Float32Array([
     map.width,
     map.height,
@@ -43,7 +42,14 @@ const uniformsArray = new Float32Array([
     map.longitude.max,
     uniforms.markerSize,
     0, // Unused
-    ...uniforms.markerColor, // Marker color
+    uniforms.markerColor[0] / 255, // Marker color (R)
+    uniforms.markerColor[1] / 255, // Marker color (G)
+    uniforms.markerColor[2] / 255, // Marker color (B)
+    uniforms.markerColor[3], // Marker color (A)
+    uniforms.gridWidth,
+    uniforms.gridHeight,
+    uniforms.mouseX,
+    uniforms.mouseY,
 ]);
 const uniformsBuffer = DEVICE.createBuffer({
     size: uniformsArray.length * Float32Array.BYTES_PER_ELEMENT,
@@ -51,105 +57,139 @@ const uniformsBuffer = DEVICE.createBuffer({
 });
 DEVICE.queue.writeBuffer(uniformsBuffer, 0, new Float32Array(uniformsArray));
 
-// Create the GPU pipeline to run our shaders
-const shaderModule = DEVICE.createShaderModule({
-    code: shader
+// Create the bind group layout for the compute stage
+const computeBindGroupLayout = DEVICE.createBindGroupLayout({
+    entries: [
+        { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+        { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+        { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+        { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+        { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+    ]
 });
-const pipeline = DEVICE.createRenderPipeline({
+
+// Create the compute pipeline layout
+const computePipelineLayout = DEVICE.createPipelineLayout({
+    bindGroupLayouts: [
+        computeBindGroupLayout,
+    ]
+});
+
+// Create the compute pipeline to count trees in each grid cell
+const computePipelineCount = DEVICE.createComputePipeline({
+    layout: computePipelineLayout,
+    compute: {
+        module: DEVICE.createShaderModule({
+            code: shaders.compute
+        }),
+        entryPoint: "count"
+    }
+});
+
+// Create the compute pipeline to compute the max tree count value among all grid cells
+const computePipelineMax = DEVICE.createComputePipeline({
+    layout: computePipelineLayout,
+    compute: {
+        module: DEVICE.createShaderModule({
+            code: shaders.compute
+        }),
+        entryPoint: "max"
+    }
+});
+
+// Create the render pipeline to draw the heatmap
+const renderShaderModule = DEVICE.createShaderModule({
+    code: shaders.render
+});
+const renderPipeline = DEVICE.createRenderPipeline({
     layout: "auto",
     vertex: {
-        module: shaderModule,
+        module: renderShaderModule,
         entryPoint: "vertex",
         // buffers: We don't need any vertex buffer :)
     },
     fragment: {
-        module: shaderModule,
+        module: renderShaderModule,
         entryPoint: "fragment",
         targets: [
             {
                 format: GPU.getPreferredCanvasFormat()
             }
         ]
-    },
-    primitive: {
-        topology: "triangle-list" // Optional, defaults to "triangle-list"
     }
 });
 
-// Create GPU bindings to the buffers
-const bindGroup = DEVICE.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
+// Create the bind group for the compute stage
+const computeBindGroup = DEVICE.createBindGroup({
+    layout: computeBindGroupLayout,
     entries: [
-        {
-            binding: 0,
-            resource: {
-                buffer: treeCoordinatesBuffer
-            }
-        },
-        {
-            binding: 1,
-            resource: {
-                buffer: treeInfoBuffer
-            }
-        },
-        {
-            binding: 2,
-            resource: {
-                buffer: uniformsBuffer
-            }
-        }
+        { binding: 0, resource: { buffer: GLOBAL.gpuTreeCoordinatesBuffer } },
+        { binding: 1, resource: { buffer: GLOBAL.gpuTreeInfoBuffer } },
+        { binding: 2, resource: { buffer: cellsBuffer } },
+        { binding: 3, resource: { buffer: gridBuffer } },
+        { binding: 4, resource: { buffer: uniformsBuffer } },
+    ]
+});
+
+// Create the bind group for the render stage
+const renderBindGroup = DEVICE.createBindGroup({
+    layout: renderPipeline.getBindGroupLayout(0),
+    entries: [
+        { binding: 0, resource: { buffer: cellsBuffer } },
+        { binding: 1, resource: { buffer: gridBuffer } },
+        { binding: 2, resource: { buffer: uniformsBuffer } },
     ]
 });
 
 // Create the color attachment to draw to
-const minSide = -100 + Math.min(CANVAS.parentNode.clientWidth, CANVAS.parentNode.clientHeight);
-CANVAS.width = minSide;
-CANVAS.height = minSide;
-const colorAttachment = {
-    view: null,
-    loadOp: "clear",
-    clearValue: {r: 0, g: 0, b: 0, a: 1},
-    storeOp: "store"
-};
+const colorAttachment = GLOBAL.colorAttachment;
 
 // Run our shaders
 function render() {
-    colorAttachment.view = CONTEXT.getCurrentTexture().createView();
     const commandEncoder = DEVICE.createCommandEncoder();
-    const renderPass = commandEncoder.beginRenderPass({
-        colorAttachments: [colorAttachment]
-    });
     {
-        // Draw map
-        renderPass.setPipeline(GLOBAL.task3.pipeline);
-        renderPass.setBindGroup(0, GLOBAL.task3.bindGroup);
-        renderPass.draw(6); // 6 vertices - one quad
+        // Compute pass
+        {
+            const numWorkgroupsTrees = Math.ceil(GLOBAL.trees.getNumTrees() / 64);
+            const numWorkgroupCells = Math.ceil(uniforms.gridWidth * uniforms.gridHeight / 64);
 
-        // Draw markers
-        renderPass.setPipeline(pipeline);
-        renderPass.setBindGroup(0, bindGroup);
-        renderPass.draw(6 * data.getNumTrees());
+            const computePass = commandEncoder.beginComputePass();
+            {
+                computePass.setBindGroup(0, computeBindGroup);
 
-        // End
-        renderPass.end();
+                // Count trees in each grid cell
+                computePass.setPipeline(computePipelineCount);
+                computePass.dispatchWorkgroups(numWorkgroupsTrees);
+
+                // Compute the max tree count value among all grid cells
+                computePass.setPipeline(computePipelineMax);
+                computePass.dispatchWorkgroups(numWorkgroupCells);
+            }
+            computePass.end();
+        }
+
+        // Render pass
+        {
+            colorAttachment.view = CONTEXT.getCurrentTexture().createView();
+            const renderPass = commandEncoder.beginRenderPass({
+                colorAttachments: [colorAttachment]
+            });
+            {
+                // Draw map
+                renderPass.setPipeline(GLOBAL.renderMapPipeline);
+                renderPass.setBindGroup(0, GLOBAL.mapBindGroup);
+                renderPass.draw(6); // 6 vertices - one quad
+
+                // Draw heatmap
+                renderPass.setPipeline(renderPipeline);
+                renderPass.setBindGroup(0, renderBindGroup);
+                renderPass.draw(6 * uniforms.gridWidth * uniforms.gridHeight);
+            }
+            renderPass.end();
+        }
     }
     DEVICE.queue.submit([commandEncoder.finish()]);
 }
 render();
-
-// Add some sliders to the UI
-const markerSize = GUI.add(uniforms, "markerSize", 0.001, 0.1, 0.001);
-const markerColor = GUI.addColor(uniforms, "markerColor");
-function updateUniforms() {
-    uniformsArray[6] = uniforms.markerSize;
-    uniformsArray[8] = uniforms.markerColor[0] / 255;
-    uniformsArray[9] = uniforms.markerColor[1] / 255;
-    uniformsArray[10] = uniforms.markerColor[2] / 255;
-    uniformsArray[11] = uniforms.markerColor[3];
-    DEVICE.queue.writeBuffer(uniformsBuffer, 0, uniformsArray);
-    render();
-}
-markerSize.onChange(updateUniforms);
-markerColor.onChange(updateUniforms);
 
 }

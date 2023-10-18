@@ -1,5 +1,5 @@
 window.SHADERS = Object.assign(window.SHADERS || {}, {
-    heatmap: /* wgsl */ `
+    heatmapCompute: /* wgsl */ `
 
 struct TreeCoordinates {
     lat: f32,
@@ -14,8 +14,13 @@ struct TreeInfo {
 };
 
 struct Cell {
-    count: atomic<u32>,
+    treeCount: atomic<u32>,
+    heightCategoryCount: array<atomic<u32>, 9>,
 };
+
+struct Grid {
+    maxTreeCount: atomic<u32>,
+}
 
 struct Uniforms {
     mapWidth: f32,
@@ -27,14 +32,17 @@ struct Uniforms {
     markerSize: f32,
     unused: f32,
     markerColor: vec4f,
-    gridWidth: u32,
-    gridHeight: u32,
+    gridWidth: f32,
+    gridHeight: f32,
+    mouseX: f32,
+    mouseZ: f32,
 };
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
 @group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
-@group(0) @binding(2) var<storage, read> grid: array<Cell>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(2) var<storage, read_write> cells: array<Cell>;
+@group(0) @binding(3) var<storage, read_write> grid: Grid;
+@group(0) @binding(4) var<uniform> u: Uniforms;
 
 fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     // Since our map area is kiiiiinda small, a linear mapping is okay
@@ -44,31 +52,50 @@ fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     );
 }
 
-fn xyToGridIndex(xy: vec2f) -> u32 {
-    let x: u32 = u32(xy.x * f32(u.gridWidth));
-    let y: u32 = u32(xy.y * f32(u.gridHeight));
-    return y * u.gridWidth + x;
+fn xyToCellIndex(xy: vec2f) -> u32 {
+    let x: u32 = u32(xy.x * u.gridWidth);
+    let y: u32 = u32(xy.y * u.gridHeight);
+    return y * u32(u.gridWidth) + x;
 }
 
 @compute
 @workgroup_size(64)
-fn compute(@builtin(global_invocation_id) globalId: vec3u) {
+fn count(@builtin(global_invocation_id) globalId: vec3u) {
     if (globalId.x >= arrayLength(&treeInfo)) {
         return;
     }
+
+    // Get tree index
+    let treeIndex = globalId.x;
 
     // Get 2D position of tree
     let latLon = treeCoordinates[treeIndex];
     let xy = latLonToXY(latLon.lat, latLon.lon);
 
-    // Get grid index
-    let gridIndex = xyToGridIndex(xy);
-    
-    let treeInfo: TreeInfo = treeInfo[globalId.x];
+    // Get cell index
+    let cellIndex = xyToCellIndex(xy);
 
-    // Increment one to district number
-    let districtNumber: u32 = treeInfo.districtNumber;
-    atomicAdd(&aggregatedValues.districtNumberOccurrences[districtNumber - 1], 1);
+    // Get height category
+    let treeInfo: TreeInfo = treeInfo[globalId.x];
+    let heightCategory = treeInfo.treeHeightCategory;
+
+    // Increment one to tree count and height category count
+    atomicAdd(&cells[cellIndex].treeCount, 1);
+    atomicAdd(&cells[cellIndex].heightCategoryCount[heightCategory], 1);
+}
+
+@compute
+@workgroup_size(64)
+fn max(@builtin(global_invocation_id) globalId: vec3u) {
+    if (globalId.x >= arrayLength(&cells)) {
+        return;
+    }
+
+    let cellIndex = globalId.x;
+
+    let treeCount = atomicLoad(&cells[cellIndex].treeCount);
+
+    atomicMax(&grid.maxTreeCount, treeCount);
 }
 
 `});

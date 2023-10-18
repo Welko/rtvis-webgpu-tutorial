@@ -89,5 +89,7 @@ for (let i = 0; i < 23; ++i) {
     console.log("Number of trees in district " + (i + 1) + ": " + resultData[i]);
 }
 
+GLOBAL.trees = data;
+GLOBAL.gpuTreeInfoBuffer = treeInfoBuffer;
 
 }
