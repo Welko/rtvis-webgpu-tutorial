@@ -26,7 +26,7 @@ const map = GLOBAL.map;
 // Set up the uniforms
 const uniforms = {
     markerSize: 0.01,
-    markerColor: [255, 0, 0],
+    markerColor: [117, 107, 177],
     markerAlpha: 1,
 };
 const uniformsArray = new Float32Array([

@@ -102,9 +102,18 @@ fn vertex(input: VertexInput) -> VertexOutput {
     let maxCount = grid.maxTreeCount;
     let count = cells[cellIndex].treeCount;
     let color1 = u.markerColor;
-    let color0 = vec4f(1, 1, 1, 0.1);
+    let color0 = vec4f(color1.rgb, color1.a * 0.2);
+
+    // Linear blending
     let blendingFactor = f32(count) / f32(maxCount);
-    let color = mix(color0, color1, blendingFactor);
+
+    // Logarithmic blending
+    //let blendingFactor = log2(f32(count) + 1) / log2(f32(maxCount) + 1);
+
+    var color = mix(color0, color1, blendingFactor);
+    if (count == 0) {
+        color.a = 0;
+    }
 
     return VertexOutput(
         vec4f(vertex, 0, 1),
