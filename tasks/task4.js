@@ -26,7 +26,8 @@ const map = GLOBAL.map;
 // Set up the uniforms
 const uniforms = {
     markerSize: 0.01,
-    markerColor: [255, 0, 0, 1],
+    markerColor: [255, 0, 0],
+    markerAlpha: 1,
 };
 const uniformsArray = new Float32Array([
     map.width,
@@ -40,7 +41,7 @@ const uniformsArray = new Float32Array([
     uniforms.markerColor[0] / 255, // Marker color (R)
     uniforms.markerColor[1] / 255, // Marker color (G)
     uniforms.markerColor[2] / 255, // Marker color (B)
-    uniforms.markerColor[3], // Marker color (A)
+    uniforms.markerAlpha, // Marker color (A)
 ]);
 const uniformsBuffer = DEVICE.createBuffer({
     size: uniformsArray.length * Float32Array.BYTES_PER_ELEMENT,
@@ -64,7 +65,19 @@ const pipeline = DEVICE.createRenderPipeline({
         entryPoint: "fragment",
         targets: [
             {
-                format: GPU.getPreferredCanvasFormat()
+                format: GPU.getPreferredCanvasFormat(),
+                blend: {
+                    color: {
+                        operation: "add",
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                    },
+                    alpha: {
+                        operation: "add",
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                    }
+                }
             }
         ]
     }
@@ -112,17 +125,19 @@ render();
 const gui = GUI.addFolder("Task 4");
 const markerSize = gui.add(uniforms, "markerSize", 0.001, 0.1, 0.001);
 const markerColor = gui.addColor(uniforms, "markerColor");
+const markerAlpha = gui.add(uniforms, "markerAlpha", 0, 1, 0.01);
 function updateUniforms() {
     uniformsArray[6] = uniforms.markerSize;
     uniformsArray[8] = uniforms.markerColor[0] / 255;
     uniformsArray[9] = uniforms.markerColor[1] / 255;
     uniformsArray[10] = uniforms.markerColor[2] / 255;
-    uniformsArray[11] = uniforms.markerColor[3];
+    uniformsArray[11] = uniforms.markerAlpha;
     DEVICE.queue.writeBuffer(uniformsBuffer, 0, uniformsArray);
     render();
 }
 markerSize.onChange(updateUniforms);
 markerColor.onChange(updateUniforms);
+markerAlpha.onChange(updateUniforms);
 
 GLOBAL.gpuTreeCoordinatesBuffer = treeCoordinatesBuffer;
 GLOBAL.uniforms = uniforms;

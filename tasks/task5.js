@@ -1,5 +1,5 @@
 async function task5() {
-
+return;
 console.log("task5");
 
 // Write some shader code to compute the heightmap
