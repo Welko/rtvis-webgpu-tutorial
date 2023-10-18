@@ -7,7 +7,6 @@ class Tutorial {
         await this.initializePipelines();
         await this.initializeBindGroups();
         await this.initializeGUI();
-        await this.readBuffer();
         this.render();
     }
 
