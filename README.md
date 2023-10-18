@@ -31,6 +31,11 @@ First steps:
 - Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
 - Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
 
+Other resources:
+- [Tutorial slides](https://docs.google.com/presentation/d/1Jx5kvvB9_DLC7iBE9TKayKtJNSpFgYcVESsWcWKuo5Q/edit#slide=id.g290d839467f_0_27)
+- [WebGPU Working Draft](https://www.w3.org/TR/webgpu/)
+- [WebGPU Shading Language (WGSL) Working Draft](https://www.w3.org/TR/WGSL/)
+
 ## Task 0 - Initialize WebGPU
 
 Unlike WebGL, WebGPU **does not need a canvas**. It can be used only for its compute capabilites.
