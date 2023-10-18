@@ -15,6 +15,7 @@ struct TreeInfo {
 
 struct Cell {
     treeCount: atomic<u32>,
+    heightCategoryCount: array<atomic<u32>, 9>,
 };
 
 struct Grid {
@@ -33,6 +34,7 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32,
     gridHeight: f32,
+    mouseXY: vec2f,
 };
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
@@ -57,6 +59,27 @@ fn xyToCellIndex(xy: vec2f) -> u32 {
 
 @compute
 @workgroup_size(64)
+fn clear(@builtin(global_invocation_id) globalId: vec3u) {
+    if (globalId.x >= arrayLength(&cells)) {
+        return;
+    }
+
+    // Clear max tree count
+    if (globalId.x == 0) {
+        atomicStore(&grid.maxTreeCount, 0);
+    }
+
+    let cellIndex = globalId.x;
+
+    // Clear tree count and height category count
+    atomicStore(&cells[cellIndex].treeCount, 0);
+    for (var i: u32 = 0; i < 9; i = i + 1) {
+        atomicStore(&cells[cellIndex].heightCategoryCount[i], 0);
+    }
+}
+
+@compute
+@workgroup_size(64)
 fn count(@builtin(global_invocation_id) globalId: vec3u) {
     if (globalId.x >= arrayLength(&treeInfo)) {
         return;
@@ -72,8 +95,13 @@ fn count(@builtin(global_invocation_id) globalId: vec3u) {
     // Get cell index
     let cellIndex = xyToCellIndex(xy);
 
+    // Get height category
+    let treeInfo: TreeInfo = treeInfo[globalId.x];
+    let heightCategory = treeInfo.treeHeightCategory;
+
     // Increment one to tree count and height category count
     atomicAdd(&cells[cellIndex].treeCount, 1);
+    atomicAdd(&cells[cellIndex].heightCategoryCount[heightCategory], 1);
 }
 
 @compute
@@ -88,24 +116,6 @@ fn max(@builtin(global_invocation_id) globalId: vec3u) {
     let treeCount = atomicLoad(&cells[cellIndex].treeCount);
 
     atomicMax(&grid.maxTreeCount, treeCount);
-}
-
-@compute
-@workgroup_size(64)
-fn clear(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&cells)) {
-        return;
-    }
-
-    // Clear max tree count
-    if (globalId.x == 0) {
-        atomicStore(&grid.maxTreeCount, 0);
-    }
-
-    let cellIndex = globalId.x;
-
-    // Clear tree count
-    atomicStore(&cells[cellIndex].treeCount, 0);
 }
 
 `});

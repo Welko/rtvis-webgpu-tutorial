@@ -4,6 +4,7 @@ class Tutorial {
         await this.initializeWebGPU();
         await this.initializeBuffers();
         await this.initializeTextures();
+        await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
         await this.initializeAttachments();
@@ -42,11 +43,23 @@ class Tutorial {
     // Samplers
     sampler;
 
+    // Layouts
+    heatmapComputeBindGroupLayout;
+    heatmapComputePipelineLayout;
+
     // Pipelines
     imageRenderPipeline;
+    markersRenderPipeline;
+    heatmapComputeClearPipeline;
+    heatmapComputeCountPipeline;
+    heatmapComputeMaxPipeline;
+    heatmapRenderPipeline;
 
     // Bind Groups
-    imageBindGroup
+    imageBindGroup;
+    markersBindGroup;
+    heatmapComputeBindGroup;
+    heatmapRenderBindGroup;
 
     // Attachments
     colorAttachment;
@@ -56,7 +69,13 @@ class Tutorial {
         markerSize: 0.01,
         markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
         markerAlpha: 0.01,
+        gridWidth: 50,
+        gridHeight: 50,
     };
+
+    // Constants
+    GRID_MAX_WIDTH = 200;
+    GRID_MAX_HEIGHT = 200;
 
     async initializeWebGPU() {
         if (!this.gpu) {
@@ -106,6 +125,20 @@ class Tutorial {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         // Write to the uniforms buffer in render()
+
+        // Cells
+        this.gpuGridCells = this.device.createBuffer({
+            // Reserve enough space for the maximum number of cells
+            size: this.GRID_MAX_WIDTH * this.GRID_MAX_HEIGHT * Uint32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.STORAGE,
+        });
+        
+        // Grid 
+        this.gpuGrid = this.device.createBuffer({
+            // One 32-bit unsigned integer
+            size: Uint32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.STORAGE,
+        });
     }
 
     async initializeTextures() {
@@ -128,6 +161,24 @@ class Tutorial {
         this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear'
+        });
+    }
+
+    async initializeLayouts() {
+        this.heatmapComputeBindGroupLayout = this.device.createBindGroupLayout({
+            entries: [
+                { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+                { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
+                { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+                { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+                { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+            ]
+        });
+
+        this.heatmapComputePipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [
+                this.heatmapComputeBindGroupLayout,
+            ]
         });
     }
 
@@ -166,18 +217,55 @@ class Tutorial {
                 targets: [{
                     format: this.gpu.getPreferredCanvasFormat(),
                     blend: {
-                        color: {
-                            operation: "add",
-                            srcFactor: "src-alpha",
-                            dstFactor: "one-minus-src-alpha",
-                        },
-                        alpha: {
-                            operation: "add",
-                            srcFactor: "src-alpha",
-                            dstFactor: "one-minus-src-alpha",
-                        }
+                        color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                        alpha: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" }
                     }
                 }]
+            }
+        });
+
+        const pipelineDescriptor = {
+            layout: this.heatmapComputePipelineLayout,
+            compute: {
+                module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
+                entryPoint: null // Set for each pipeline
+            }
+        };
+        pipelineDescriptor.compute.entryPoint = "clear";
+        this.heatmapComputeClearPipeline = this.device.createComputePipeline(pipelineDescriptor);
+        pipelineDescriptor.compute.entryPoint = "count";
+        this.heatmapComputeCountPipeline = this.device.createComputePipeline(pipelineDescriptor);
+        pipelineDescriptor.compute.entryPoint = "max";
+        this.heatmapComputeMaxPipeline = this.device.createComputePipeline(pipelineDescriptor);
+
+        const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
+        this.heatmapRenderPipeline = this.device.createRenderPipeline({
+            layout: "auto",
+            vertex: {
+                module: heatmapRenderShaderModule,
+                entryPoint: "vertex",
+                // buffers: We don't need any vertex buffer :)
+            },
+            fragment: {
+                module: heatmapRenderShaderModule,
+                entryPoint: "fragment",
+                targets: [
+                    {
+                        format: this.gpu.getPreferredCanvasFormat(),
+                        blend: {
+                            color: {
+                                operation: "add",
+                                srcFactor: "src-alpha",
+                                dstFactor: "one-minus-src-alpha",
+                            },
+                            alpha: {
+                                operation: "add",
+                                srcFactor: "src-alpha",
+                                dstFactor: "one-minus-src-alpha",
+                            }
+                        }
+                    }
+                ]
             }
         });
     }
@@ -196,6 +284,26 @@ class Tutorial {
             entries: [
                 { binding: 0, resource: { buffer: this.gpuTreeCoodinates } },
                 { binding: 1, resource: { buffer: this.gpuTreeInfo } },
+                { binding: 2, resource: { buffer: this.gpuUniforms } },
+            ]
+        });
+
+        this.heatmapComputeBindGroup = this.device.createBindGroup({
+            layout: this.heatmapComputeBindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: this.gpuTreeCoodinates} },
+                { binding: 1, resource: { buffer: this.gpuTreeInfo } },
+                { binding: 2, resource: { buffer: this.gpuGridCells } },
+                { binding: 3, resource: { buffer: this.gpuGrid } },
+                { binding: 4, resource: { buffer: this.gpuUniforms } },
+            ]
+        });
+
+        this.heatmapRenderBindGroup = this.device.createBindGroup({
+            layout: this.heatmapRenderPipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: this.gpuGridCells } },
+                { binding: 1, resource: { buffer: this.gpuGrid } },
                 { binding: 2, resource: { buffer: this.gpuUniforms } },
             ]
         });
@@ -222,6 +330,8 @@ class Tutorial {
             this.gui.add(this.uniforms, "markerSize", 0.001, 0.1, 0.001),
             this.gui.addColor(this.uniforms, "markerColor"),
             this.gui.add(this.uniforms, "markerAlpha", 0.01, 1, 0.01),
+            this.gui.add(this.uniforms, "gridWidth", 1, this.GRID_MAX_WIDTH, 1),
+            this.gui.add(this.uniforms, "gridHeight", 1, this.GRID_MAX_HEIGHT, 1),
         ]
         .forEach((controller) => controller.onChange(onChange));
     }
@@ -269,11 +379,36 @@ class Tutorial {
             this.uniforms.markerColor[1] / 255,
             this.uniforms.markerColor[2] / 255,
             this.uniforms.markerAlpha,
+            this.uniforms.gridWidth,
+            this.uniforms.gridHeight,
         ]));
 
         this.colorAttachment.view = this.context.getCurrentTexture().createView();
 
         const commandEncoder = this.device.createCommandEncoder();
+        {
+            const numWorkgroupsTrees = Math.ceil(this.trees.getNumTrees() / 64);
+            const numWorkgroupCells = Math.ceil(this.uniforms.gridWidth * this.uniforms.gridHeight / 64);
+
+            const computePass = commandEncoder.beginComputePass();
+
+            // Set one bindgroup for all three pipelines
+            computePass.setBindGroup(0, this.heatmapComputeBindGroup);
+
+            // Clear
+            computePass.setPipeline(this.heatmapComputeClearPipeline);
+            computePass.dispatchWorkgroups(numWorkgroupCells);
+
+            // Count
+            computePass.setPipeline(this.heatmapComputeCountPipeline);
+            computePass.dispatchWorkgroups(numWorkgroupsTrees);
+
+            // Max
+            computePass.setPipeline(this.heatmapComputeMaxPipeline);
+            computePass.dispatchWorkgroups(numWorkgroupCells);
+
+            computePass.end();
+        }
         {
             const renderPass = commandEncoder.beginRenderPass({
                 colorAttachments: [this.colorAttachment]
@@ -285,9 +420,14 @@ class Tutorial {
             renderPass.draw(6); // One quad
 
             // Render markers
-            renderPass.setPipeline(this.markersRenderPipeline);
-            renderPass.setBindGroup(0, this.markersBindGroup);
-            renderPass.draw(6 * this.trees.getNumTrees()); // As many quads as we have trees
+            //renderPass.setPipeline(this.markersRenderPipeline);
+            //renderPass.setBindGroup(0, this.markersBindGroup);
+            //renderPass.draw(6 * this.trees.getNumTrees()); // As many quads as we have trees
+
+            // Render heatmap
+            renderPass.setPipeline(this.heatmapRenderPipeline);
+            renderPass.setBindGroup(0, this.heatmapRenderBindGroup);
+            renderPass.draw(6 * this.uniforms.gridWidth * this.uniforms.gridHeight); // As many quads as we have grid cells
 
             renderPass.end();
         }

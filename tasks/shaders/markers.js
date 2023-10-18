@@ -1,6 +1,53 @@
 window.SHADERS = Object.assign(window.SHADERS || {}, {
     markers: /* wgsl */ `
 
+struct VertexInput {
+    @builtin(vertex_index) vertexIndex: u32,
+};
+
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    @location(0) uv: vec2f,
+    @location(1) color: vec4f,
+};
+
+struct FragmentInput {
+    @location(0) uv: vec2f,
+    @location(1) color: vec4f,
+};
+
+struct FragmentOutput {
+    @location(0) color: vec4f,
+};
+
+struct TreeCoordinates {
+    lat: f32,
+    lon: f32,
+};
+
+struct TreeInfo {
+    treeHeightCategory: u32,
+    crownDiameterCategory: u32,
+    districtNumber: u32,
+    circumferenceAt1mInCm: u32,
+};
+
+struct Uniforms {
+    mapWidth: f32,
+    mapHeight: f32,
+    mapLatitudeMin: f32,
+    mapLatitudeMax: f32,
+    mapLongitudeMin: f32,
+    mapLongitudeMax: f32,
+    markerSize: f32,
+    unused: f32,
+    markerColor: vec4f,
+};
+
+@group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
+@group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
+@group(0) @binding(2) var<uniform> u: Uniforms;
+
 const VERTICES = array<vec2f, 6>(
     vec2f(-1, -1),
     vec2f(-1, 1),
@@ -27,47 +74,8 @@ fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     );
 }
 
-struct TreeCoordinates {
-    lat: f32,
-    lon: f32,
-};
-
-struct TreeInfo {
-    treeHeightCategory: u32,
-    crownDiameterCategory: u32,
-    districtNumber: u32,
-    circumferenceAt1mInCm: u32,
-};
-
-struct Uniforms {
-    mapWidth: f32,
-    mapHeight: f32,
-    mapLatitudeMin: f32,
-    mapLatitudeMax: f32,
-    mapLongitudeMin: f32,
-    mapLongitudeMax: f32,
-    markerSize: f32,
-    unused: f32, // Padding
-    markerColor: vec4f,
-};
-
-@group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
-@group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
-@group(0) @binding(2) var<uniform> u: Uniforms;
-
-struct VertexInput {
-    @builtin(vertex_index) vertexIndex: u32,
-};
-
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-};
-
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
-    // I'm so cool
     let treeIndex = input.vertexIndex / 6;
 
     // Get 2D position of tree
@@ -80,12 +88,9 @@ fn vertex(input: VertexInput) -> VertexOutput {
     // Get tree info
     let treeInfo = treeInfo[treeIndex];
 
-    // Color based on tree district
-    // THIS IS BAD VISUALIZATION
-    // Ideally, the district number would be mapped into a qualitative color scheme
-    // See colorbrewer2.org for some good ones
-    let color23 = u.markerColor; // Color for Liesing
-    let color1 = vec4f(0, 0, 0, color23.a); // Color for Innere Stadt
+    // Map color based on tree district
+    let color23 = u.markerColor;
+    let color1 = vec4f(0, 0, 0, color23.a);
     let blendingFactor = f32(treeInfo.districtNumber - 1) / 22;
     let color = mix(color1, color23, blendingFactor);
 
@@ -95,15 +100,6 @@ fn vertex(input: VertexInput) -> VertexOutput {
         color,
     );
 }
-
-struct FragmentInput {
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-};
-
-struct FragmentOutput {
-    @location(0) color: vec4f,
-};
 
 @fragment
 fn fragment(input : FragmentInput) -> FragmentOutput {

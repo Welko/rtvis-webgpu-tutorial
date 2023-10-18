@@ -4,6 +4,7 @@ class Tutorial {
         await this.initializeWebGPU();
         await this.initializeBuffers();
         await this.initializeTextures();
+        await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
         await this.initializeAttachments();
@@ -44,9 +45,11 @@ class Tutorial {
 
     // Pipelines
     imageRenderPipeline;
+    markersRenderPipeline
 
     // Bind Groups
-    imageBindGroup
+    imageBindGroup;
+    markersBindGroup;
 
     // Attachments
     colorAttachment;
@@ -129,6 +132,10 @@ class Tutorial {
             magFilter: 'linear',
             minFilter: 'linear'
         });
+    }
+
+    async initializeLayouts() {
+        
     }
 
     async initializePipelines() {
