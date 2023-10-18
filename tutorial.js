@@ -3,9 +3,11 @@ class Tutorial {
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
+        await this.initializeTextures();
         await this.initializeUniforms();
         await this.initializePipelines();
         await this.initializeBindGroups();
+        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
@@ -26,19 +28,27 @@ class Tutorial {
     gpu;
     adapter;
     device;
+    context;
 
     // CPU Data
     trees;
+    map;
 
     // GPU Data
     gpuTreeInfo;
-    gpuAggregatedValues;
+    gpuMapTexture;
+
+    // Samplers
+    sampler;
 
     // Pipelines
-    aggregatePipeline;
+    imageRenderPipeline;
 
     // Bind Groups
-    aggregateBindGroup;
+    imageBindGroup
+
+    // Attachments
+    colorAttachment;
 
     async initializeWebGPU() {
         if (!this.gpu) {
@@ -52,6 +62,12 @@ class Tutorial {
         }
         this.adapter = await this.gpu.requestAdapter();
         this.device = await this.adapter.requestDevice();
+
+        this.context = this.canvas.getContext("webgpu");
+        this.context.configure({
+            device: this.device,
+            format: this.gpu.getPreferredCanvasFormat()
+        });
     }
 
     async initializeBuffers() {
@@ -66,11 +82,28 @@ class Tutorial {
         // Attention! Now it's a Uint32Array, not float :)
         new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer());
         this.gpuTreeInfo.unmap();
+    }
 
-        // AggregatedValues
-        this.gpuAggregatedValues = this.device.createBuffer({
-            size: 23 * Uint32Array.BYTES_PER_ELEMENT, // 23 unsigned integers (one per district in Vienna)
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+    async initializeTextures() {
+        this.map = await LOADER.loadMap(); // Load map images and geographical data
+
+        const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
+        this.gpuMapTexture = this.device.createTexture({
+            size: [image.width, image.height],
+            format: "rgba8unorm",
+            // TEXTURE_BINDING is needed to bind the texture to the pipeline
+            // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        this.device.queue.copyExternalImageToTexture(
+            {source: image, flipY: true}, // Source
+            {texture: this.gpuMapTexture}, // Destination
+            [image.width, image.height] // Size
+        );
+
+        this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear'
         });
     }
 
@@ -79,24 +112,50 @@ class Tutorial {
     }
 
     async initializePipelines() {
-        this.aggregatePipeline = this.device.createComputePipeline({
+        const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+        this.imageRenderPipeline = this.device.createRenderPipeline({
             layout: "auto",
-            compute: {
-                module: this.device.createShaderModule({ code: SHADERS.aggregate }),
-                entryPoint: "main"
-            }
+            vertex: {
+                module: imageShaderModule,
+                entryPoint: "vertex",
+                // buffers: We don't need any vertex buffer :)
+            },
+            fragment: {
+                module: imageShaderModule,
+                entryPoint: "fragment",
+                targets: [
+                    {
+                        // Only one render target, where our color will be drawn
+                        format: this.gpu.getPreferredCanvasFormat()
+                    }
+                ]
+            },
         });
     }
 
     async initializeBindGroups() {
-        this.aggregateBindGroup = this.device.createBindGroup({
-            layout: this.aggregatePipeline.getBindGroupLayout(0),
+        this.imageBindGroup = this.device.createBindGroup({
+            layout: this.imageRenderPipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: { buffer: this.gpuTreeInfo } },
-                // Now we have a second buffer on binding 1!
-                { binding: 1,  resource: { buffer: this.gpuAggregatedValues } }
+                { binding: 0, resource: this.gpuMapTexture.createView() },
+                { binding: 1, resource: this.sampler },
             ]
         });
+    }
+
+    async initializeAttachments() {
+        // Calculate size of our image and set it to the canvas
+        const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
+        this.canvas.width = minSide;
+        this.canvas.height = minSide;
+
+        // Color attachment to draw to
+        this.colorAttachment = {
+            view: null, // Will be set in render(), i.e., every frame
+            loadOp: "clear",
+            clearValue: {r: 0, g: 0, b: 0, a: 0},
+            storeOp: "store"
+        };
     }
 
     async initializeGUI() {
@@ -131,19 +190,20 @@ class Tutorial {
     }
 
     async render() {
+        this.colorAttachment.view = this.context.getCurrentTexture().createView();
+
         const commandEncoder = this.device.createCommandEncoder();
         {
-            const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
-
-            const computePass = commandEncoder.beginComputePass();
-            computePass.setPipeline(this.aggregatePipeline);
-            computePass.setBindGroup(0, this.aggregateBindGroup);
-            computePass.dispatchWorkgroups(numTreeWorkgroups);
-            computePass.end();
+            const renderPass = commandEncoder.beginRenderPass({
+                colorAttachments: [this.colorAttachment]
+            });
+            renderPass.setPipeline(this.imageRenderPipeline);
+            renderPass.setBindGroup(0, this.imageBindGroup);
+            renderPass.draw(6); // 6 vertices - one quad
+            renderPass.end();
         }
         const commandBuffer = commandEncoder.finish();
         this.device.queue.submit([commandBuffer]);
-        console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
     }
 
 }

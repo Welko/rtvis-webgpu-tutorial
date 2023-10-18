@@ -256,6 +256,8 @@ And we're done!
 
 ## Task 2 - Processing Real Data
 
+Duration: 15 minutes
+
 We start by loading some real data. The data we use here is from the [
 Baumkataster bzw. Bäume Standorte Wien](https://www.data.gv.at/katalog/dataset/c91a4635-8b7d-43fe-9b27-d95dec8392a7), a dataset of trees in Vienna.
 
@@ -384,3 +386,229 @@ You should now see displayed on the console the number of trees counted per dist
 
 ## Task 3 - Render an Image
 
+Duration: 10 minutes
+
+<img src="map/vienna-satellite.png" alt="A map of Vienna, the result of task 3" height="500">
+
+Finally we will render something on the screen. In this case, it will be just a simple texture.
+
+The first step is to load our map data, which includes four images of Vienna: satellite, streets, outdoors, and height
+
+```javascript
+// CPU Data
+map;
+
+async initializeTextures() {
+    this.map = await LOADER.loadMap(); // Load map images and geographical data
+}
+```
+
+The images contained in map are ready to be used with WebGPU. So we can jump straight into creating our texture.
+
+```javascript
+// GPU Data
+gpuMapTexture;
+
+async initializeTextures() {
+    ...
+    const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
+    this.this.gpuMapTexture = this.device.createTexture({
+        size: [image.width, image.height],
+        format: "rgba8unorm",
+        // TEXTURE_BINDING is needed to bind the texture to the pipeline
+        // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    this.device.queue.copyExternalImageToTexture(
+        {source: image, flipY: true}, // Source
+        {texture: this.gpuTexture}, // Destination
+        [image.width, image.height] // Size
+    );
+}
+```
+
+To finalize the initialization of our texture, we also create a sampler. It is through the sampler that we access the texture in the shaders.
+
+```javascript
+// Samplers
+sampler;
+
+async initializeTextures() {
+    ...
+    this.sampler = this.device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear'
+    });
+}
+```
+
+With the texture data set up on the GPU, we begin the process of showing it on the screen. For this tutorial, we will write one vertex and one fragment shader, and we will render a quad (two triangles forming a rectangle).
+
+For loading large 3D models, it can be beneficial to create a **vertex buffer**, which is used to feed data into our vertex shader.
+
+Since we only render one quad (6 triangles with `triangle-list`), we hard-code the vertex and UV positions in the shader.
+
+Open `shaders/image.js`.
+
+This time, you will find only the definitions of our vertices and UVs.
+
+We begin by adding our bindings.
+
+```wgsl
+@group(0) @binding(0) var texture: texture_2d<f32>;
+@group(0) @binding(1) var linearSampler: sampler;
+```
+
+Next, we define the vertex shader. Other graphics APIs provide global variables to manage access to the inputs and outputs of shaders (e.g., OpenGL with `gl_VertexID` or `gl_FragColor`). In WebGPU, the inputs and outputs are explicitly defined and are available as arguments in our entry point function.
+
+```wgsl
+struct VertexInput {
+    @builtin(vertex_index) vertexIndex: u32, // Analogous to gl_VertexID in OpenGL
+};
+
+struct VertexOutput {
+    @builtin(position) position: vec4f, // Built-in vertex position output
+    @location(0) uv: vec2f, // Varying passed to fragment shader
+};
+
+@vertex
+fn vertex(input: VertexInput) -> VertexOutput {
+    return VertexOutput(
+        // Index our vertex/UV data using the current vertex's index
+        // %6 just for safety in case the draw call has more than 6 vertices
+        vec4f(VERTICES[input.vertexIndex % 6], 0, 1),
+        UVS[input.vertexIndex % 6],
+    );
+}
+```
+
+In the fragment shader, we then use our sampler to sample the texture.
+
+```wgsl
+struct FragmentInput {
+    @location(0) uv: vec2f, // Varying from vertex shader
+};
+
+struct FragmentOutput {
+    @location(0) color: vec4f, // Built-in fragment color output (analogous to gl_FragColor)
+};
+
+@fragment
+fn fragment(input : FragmentInput) -> FragmentOutput {
+    return FragmentOutput(
+        // Sample our texture
+        textureSample(texture, linearSampler, input.uv),
+    );
+}
+```
+
+Like previously, we must still create a **pipeline** and **bind group**. Additionally, we also need to create a **color attachment**, which describes how the output of our render pass behaves.
+
+First, for the pipeline:
+
+```javascript
+// Pipelines
+imageRenderPipeline;
+
+async initializePipelines() {
+    const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+    this.imageRenderPipeline = this.device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: imageShaderModule,
+            entryPoint: "vertex",
+            // buffers: We don't need any vertex buffer :)
+        },
+        fragment: {
+            module: imageShaderModule,
+            entryPoint: "fragment",
+            targets: [
+                {
+                    // Only one render target, where our color will be drawn
+                    format: this.gpu.getPreferredCanvasFormat()
+                }
+            ]
+        },
+    });
+}
+```
+
+Then for the bind group:
+
+```javascript
+// Bind Groups
+imageBindGroup
+
+async initializeBindGroups() {
+    this.imageBindGroup = this.device.createBindGroup({
+        layout: this.imageRenderPipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: this.gpuTexture.createView() },
+            { binding: 1, resource: this.sampler },
+        ]
+    });
+}
+```
+
+And lastly, the color attachment:
+
+```javascript
+// Attachments
+colorAttachment;
+
+async initializeAttachments() {
+    // Calculate size of our image and set it to the canvas
+    const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
+    this.canvas.width = minSide;
+    this.canvas.height = minSide;
+
+    // Color attachment to draw to
+    this.colorAttachment = {
+        view: null, // Will be set in render(), i.e., every frame
+        loadOp: "clear",
+        clearValue: {r: 0, g: 0, b: 0, a: 0},
+        storeOp: "store"
+    };
+}
+```
+
+There is one last step before rendering: setting up the HTML canvas. That is done analogously to WebGL (where we use `canvas.getContext("webgl)`), followed by a configurtion of the context:
+
+```javascript
+// WebGPU
+context;
+
+async initializeWebGPU() {
+    ...
+    this.context = this.canvas.getContext("webgpu");
+    this.context.configure({
+        device: this.device,
+        format: this.gpu.getPreferredCanvasFormat()
+    });
+}
+```
+
+And finally, we can encode our commands into a buffer and submit it to the GPU!
+
+```javascript
+async render() {
+    this.colorAttachment.view = this.context.getCurrentTexture().createView();
+
+    const commandEncoder = this.device.createCommandEncoder();
+    {
+        const renderPass = commandEncoder.beginRenderPass({
+            colorAttachments: [this.colorAttachment]
+        });
+        renderPass.setPipeline(this.imageRenderPipeline);
+        renderPass.setBindGroup(0, this.imageBindGroup);
+        renderPass.draw(6); // 6 vertices - one quad
+        renderPass.end();
+    }
+    const commandBuffer = commandEncoder.finish();
+    this.device.queue.submit([commandBuffer]);
+}
+```
+
+And, finally, you should see a map of Vienna on your screen.
+
+<img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">

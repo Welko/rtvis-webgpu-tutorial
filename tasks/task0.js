@@ -3,9 +3,11 @@ class Tutorial {
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
+        await this.initializeTextures();
         await this.initializeUniforms();
         await this.initializePipelines();
         await this.initializeBindGroups();
+        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
@@ -41,6 +43,10 @@ class Tutorial {
 
     }
 
+    async initializeTextures() {
+        
+    }
+
     async initializeUniforms() {
         
     }
@@ -51,6 +57,10 @@ class Tutorial {
 
     async initializeBindGroups() {
 
+    }
+
+    async initializeAttachments() {
+        
     }
 
     async initializeGUI() {

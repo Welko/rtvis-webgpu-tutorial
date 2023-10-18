@@ -3,9 +3,11 @@ class Tutorial {
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
+        await this.initializeTextures();
         await this.initializeUniforms();
         await this.initializePipelines();
         await this.initializeBindGroups();
+        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
@@ -52,6 +54,10 @@ class Tutorial {
         this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
     }
 
+    async initializeTextures() {
+        
+    }
+
     async initializeUniforms() {
         
     }
@@ -80,6 +86,10 @@ class Tutorial {
                 }
             ]
         });
+    }
+
+    async initializeAttachments() {
+        
     }
 
     async initializeGUI() {
