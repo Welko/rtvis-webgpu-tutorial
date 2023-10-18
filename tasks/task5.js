@@ -17,8 +17,8 @@ const GRID_HEIGHT_MAX = 100;
 const uniforms = GLOBAL.uniforms;
 uniforms.gridWidth = 50;
 uniforms.gridHeight = 50;
-uniforms.mouseX = 0;
-uniforms.mouseY = 0;
+uniforms.mouseX = -100000;
+uniforms.mouseY = -100000;
 
 // Create a buffer to store the grid cells
 const cellsBuffer = DEVICE.createBuffer({
@@ -73,6 +73,17 @@ const computePipelineLayout = DEVICE.createPipelineLayout({
     bindGroupLayouts: [
         computeBindGroupLayout,
     ]
+});
+
+// Create the compute pipeline to clear the grid cells
+const computePipelineClear = DEVICE.createComputePipeline({
+    layout: computePipelineLayout,
+    compute: {
+        module: DEVICE.createShaderModule({
+            code: shaders.compute
+        }),
+        entryPoint: "clear"
+    }
 });
 
 // Create the compute pipeline to count trees in each grid cell
@@ -169,6 +180,10 @@ function render() {
             {
                 computePass.setBindGroup(0, computeBindGroup);
 
+                // Clear tree count in each grid cell
+                computePass.setPipeline(computePipelineClear);
+                computePass.dispatchWorkgroups(numWorkgroupCells);
+
                 // Count trees in each grid cell
                 computePass.setPipeline(computePipelineCount);
                 computePass.dispatchWorkgroups(numWorkgroupsTrees);
@@ -208,17 +223,55 @@ const gui = GUI.addFolder("Task 5");
 //const markerSize = gui.add(uniforms, "markerSize", 0.001, 0.1, 0.001);
 const markerColor = gui.addColor(uniforms, "markerColor");
 const markerAlpha = gui.add(uniforms, "markerAlpha", 0, 1, 0.01);
+const gridWidth = gui.add(uniforms, "gridWidth", 1, GRID_WIDTH_MAX, 1);
+const gridHeight = gui.add(uniforms, "gridHeight", 1, GRID_HEIGHT_MAX, 1);
 function updateUniforms() {
     uniformsArray[6] = uniforms.markerSize;
     uniformsArray[8] = uniforms.markerColor[0] / 255;
     uniformsArray[9] = uniforms.markerColor[1] / 255;
     uniformsArray[10] = uniforms.markerColor[2] / 255;
     uniformsArray[11] = uniforms.markerAlpha;
+    uniformsArray[12] = uniforms.gridWidth;
+    uniformsArray[13] = uniforms.gridHeight;
+    uniformsArray[14] = uniforms.mouseX;
+    uniformsArray[15] = uniforms.mouseY;
     DEVICE.queue.writeBuffer(uniformsBuffer, 0, uniformsArray);
     render();
 }
 //markerSize.onChange(updateUniforms);
 markerColor.onChange(updateUniforms);
 markerAlpha.onChange(updateUniforms);
+gridWidth.onChange(updateUniforms);
+gridHeight.onChange(updateUniforms);
+
+CANVAS.addEventListener("mousemove", (event) => {
+    const rect = CANVAS.getBoundingClientRect();
+    uniforms.mouseX = (event.clientX - rect.left);
+    uniforms.mouseY = (event.clientY - rect.top);
+    updateUniforms();
+    tooltip(uniforms.mouseX, uniforms.mouseY);
+});
+CANVAS.addEventListener("mouseleave", (event) => {
+    uniforms.mouseX = -100000;
+    uniforms.mouseY = -100000;
+    console.log(uniforms.mouseX, uniforms.mouseY);
+    updateUniforms();
+});
+
+let lastHoveredCellIndex = null;
+const tooltipElement = document.createElement("tooltip");
+tooltipElement.style.display = "none";
+tooltipElement.style.position = "absolute";
+tooltipElement.style.transform = "translate(-50%, -100%)";
+document.body.appendChild(tooltipElement);
+function tooltip(x, y) {
+    tooltipElement.style.top = `${y}px`;
+    tooltipElement.style.left = `${x}px`;
+
+    const cellIndex = Math.floor((x / CANVAS.width) * uniforms.gridWidth) +
+                      Math.floor((y / CANVAS.height) * uniforms.gridHeight) * uniforms.gridWidth;
+    
+    console.log(cellIndex);
+}
 
 }

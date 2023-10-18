@@ -60,6 +60,27 @@ fn xyToCellIndex(xy: vec2f) -> u32 {
 
 @compute
 @workgroup_size(64)
+fn clear(@builtin(global_invocation_id) globalId: vec3u) {
+    if (globalId.x >= arrayLength(&cells)) {
+        return;
+    }
+
+    // Clear max tree count
+    if (globalId.x == 0) {
+        atomicStore(&grid.maxTreeCount, 0);
+    }
+
+    let cellIndex = globalId.x;
+
+    // Clear tree count and height category count
+    atomicStore(&cells[cellIndex].treeCount, 0);
+    for (var i: u32 = 0; i < 9; i = i + 1) {
+        atomicStore(&cells[cellIndex].heightCategoryCount[i], 0);
+    }
+}
+
+@compute
+@workgroup_size(64)
 fn count(@builtin(global_invocation_id) globalId: vec3u) {
     if (globalId.x >= arrayLength(&treeInfo)) {
         return;

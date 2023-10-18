@@ -9,11 +9,13 @@ struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) uv: vec2f,
     @location(1) color: vec4f,
+    @location(2) mouseOver: f32,
 };
 
 struct FragmentInput {
     @location(0) uv: vec2f,
     @location(1) color: vec4f,
+    @location(2) mouseOver: f32,
 };
 
 struct FragmentOutput {
@@ -53,8 +55,7 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32,
     gridHeight: f32,
-    mouseX: f32,
-    mouseZ: f32,
+    mouseXY: vec2f,
 };
 
 @group(0) @binding(0) var<storage, read> cells: array<Cell>;
@@ -115,17 +116,32 @@ fn vertex(input: VertexInput) -> VertexOutput {
         color.a = 0;
     }
 
+    // Is mouse inside this cell?
+    var mouseOver = 0.0;
+    {
+        let s = size;
+        let m = u.mouseXY;
+        if (m.x + s.x >= xy.x && m.x - s.x < xy.x && m.y + s.y >= xy.y && m.y - s.y < xy.y) {
+            mouseOver = 1.0;
+        }
+    }
+
     return VertexOutput(
         vec4f(vertex, 0, 1),
         UVS[input.vertexIndex % 6],
         color,
+        mouseOver,
     );
 }
 
 @fragment
 fn fragment(input : FragmentInput) -> FragmentOutput {
+    var color = input.color;
+    if (input.mouseOver > 0.5) {
+        color = vec4f(0, 0, 0, 1);
+    }
     return FragmentOutput(
-        input.color,
+        color,
     );
 }
 
