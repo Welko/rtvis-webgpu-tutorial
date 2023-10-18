@@ -34,8 +34,7 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32,
     gridHeight: f32,
-    mouseX: f32,
-    mouseZ: f32,
+    mouseXY: vec2f,
 };
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;

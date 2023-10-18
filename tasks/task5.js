@@ -246,32 +246,79 @@ gridHeight.onChange(updateUniforms);
 
 CANVAS.addEventListener("mousemove", (event) => {
     const rect = CANVAS.getBoundingClientRect();
-    uniforms.mouseX = (event.clientX - rect.left);
-    uniforms.mouseY = (event.clientY - rect.top);
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    uniforms.mouseX = x / CANVAS.width * 2 - 1;
+    uniforms.mouseY = -y / CANVAS.height * 2 + 1;
     updateUniforms();
-    tooltip(uniforms.mouseX, uniforms.mouseY);
+    tooltip(x, y);
 });
 CANVAS.addEventListener("mouseleave", (event) => {
     uniforms.mouseX = -100000;
     uniforms.mouseY = -100000;
-    console.log(uniforms.mouseX, uniforms.mouseY);
     updateUniforms();
+    tooltip();
 });
 
 let lastHoveredCellIndex = null;
 const tooltipElement = document.createElement("tooltip");
 tooltipElement.style.display = "none";
 tooltipElement.style.position = "absolute";
-tooltipElement.style.transform = "translate(-50%, -100%)";
+tooltipElement.style.whiteSpace = "pre";
+tooltipElement.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+tooltipElement.style.color = "white";
+tooltipElement.style.padding = "0.5em";
+tooltipElement.style.borderRadius = "0.5em";
+tooltipElement.style.pointerEvents = "none";
+tooltipElement.style.userSelect = "none";
 document.body.appendChild(tooltipElement);
-function tooltip(x, y) {
+async function tooltip(x=undefined, y=undefined) {
+    if (x === undefined || y === undefined) {
+        tooltipElement.style.display = "none";
+        return;
+    }
+    
     tooltipElement.style.top = `${y}px`;
     tooltipElement.style.left = `${x}px`;
 
     const cellIndex = Math.floor((x / CANVAS.width) * uniforms.gridWidth) +
-                      Math.floor((y / CANVAS.height) * uniforms.gridHeight) * uniforms.gridWidth;
+                      Math.floor((1 - y / CANVAS.height) * uniforms.gridHeight) * uniforms.gridWidth;
+                      
+    if (cellIndex === lastHoveredCellIndex) {
+        return;
+    }
+    lastHoveredCellIndex = cellIndex;
     
-    console.log(cellIndex);
+    // Read cell
+    const readBytes = 10 * Uint32Array.BYTES_PER_ELEMENT;
+    const readOffset = cellIndex * 10 * Uint32Array.BYTES_PER_ELEMENT;
+    const readBuffer = DEVICE.createBuffer({
+        size: readBytes,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    const readDataCommandEncoder = DEVICE.createCommandEncoder();
+    readDataCommandEncoder.copyBufferToBuffer(cellsBuffer, readOffset, readBuffer, 0, readBytes);
+    DEVICE.queue.submit([readDataCommandEncoder.finish()]);
+    await readBuffer.mapAsync(GPUMapMode.READ);
+    const resultData = new Uint32Array(readBuffer.getMappedRange());
+    const cell = {
+        treeCount: resultData[0],
+        heightCategoryCount: Array.from(resultData.slice(1, 9)),
+    };
+    
+    // Delete read buffer
+    readBuffer.destroy();
+
+    // Update tooltip
+    const heightCategories = ["unknown", "0-5 m", "6-10 m", "11-15 m", "16-20 m", "21-25 m", "26-30 m", "31-35 m", "> 35 m"];
+    let text = `Cell ${cellIndex}:\n`;
+    text += `Tree count: ${cell.treeCount}\n`;
+    text += "Height categories:\n";
+    text += cell.heightCategoryCount.map((count, index) => {
+        return `- ${heightCategories[index]}: ${count}`;
+    }).join("\n");
+    tooltipElement.innerText = text;
+    tooltipElement.style.display = "";
 }
 
 }
