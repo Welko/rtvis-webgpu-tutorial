@@ -31,40 +31,18 @@
 <!-- Tutorial -->
 <script src="tutorial.js"></script>
 
-<script src="tasks/task1.js"></script>
-<script src="tasks/task2.js"></script>
-<script src="tasks/task3.js"></script>
-<script src="tasks/task4.js"></script>
-<script src="tasks/task5.js"></script>
-<script src="tasks/tasks.js"></script>
-
 <script>
-    // Declare global variables
-    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT;
-
-    window.addEventListener("load", async () => {
+    window.addEventListener("load", () => {
         // Initialize GUI
-        GUI = new dat.GUI({ name: document.title });
+        const gui = new dat.GUI({ name: document.title });
 
         // Initialize canvas
-        CANVAS = document.createElement("canvas");
-        document.body.appendChild(CANVAS);
+        const canvas = document.createElement("canvas");
+        document.body.appendChild(canvas);
 
-        // Initialize WebGPU
-        GPU = navigator.gpu;
-        if (!GPU) {
-            alert("WebGPU is not supported in your browser. Please use/update Chrome or Chromium instead.");
-            return;
-        }
-        ADAPTER = await navigator.gpu.requestAdapter();
-        DEVICE = await ADAPTER.requestDevice();
-        CONTEXT = CANVAS.getContext("webgpu");
-        CONTEXT.configure({
-            device: DEVICE,
-            format: GPU.getPreferredCanvasFormat(),
-        });
-
-        TASKS.runAll();
+        // Start tutorial
+        const tutorial = new Tutorial(gui, canvas);
+        tutorial.start();
     });
 </script>
 

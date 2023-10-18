@@ -10,6 +10,12 @@ async function task5() {
 
 console.log("task5");
 
+const DEVICE = Tasks.device;
+const GPU = Tasks.gpu;
+const CONTEXT = Tasks.context;
+const CANVAS = Tasks.canvas;
+const GUI = Tasks.gui;
+
 // Write some shader code to compute the heightmap
 const shaders = {
     compute: SHADERS.heatmapCompute,
@@ -17,10 +23,10 @@ const shaders = {
 }
 
 // Load the map
-const map = TASKS.map;
+const map = Tasks.map;
 
 // Load the data
-const data = TASKS.lotsOfTrees;
+const data = Tasks.lotsOfTrees;
 
 // Put the tree coordinates into a GPU buffer
 const treeCoordinatesBuffer = DEVICE.createBuffer({

@@ -10,11 +10,16 @@ async function task3() {
 
 console.log("task3");
 
+const DEVICE = Tasks.device;
+const GPU = Tasks.gpu;
+const CONTEXT = Tasks.context;
+const CANVAS = Tasks.canvas;
+
 // Write some shader code to draw an image
 const shader = SHADERS.image;
 
 // Load the map
-const map = TASKS.map;
+const map = Tasks.map;
 
 // Set up the texture to draw
 const image = map.images.outdoors;
