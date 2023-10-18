@@ -31,15 +31,8 @@
 <!-- Tutorial -->
 <script src="tutorial.js"></script>
 
-<script src="tasks/task1.js"></script>
-<script src="tasks/task2.js"></script>
-<script src="tasks/task3.js"></script>
-<script src="tasks/task4.js"></script>
-<script src="tasks/task5.js"></script>
-<script src="tasks/tasks.js"></script>
-
 <script>
-    window.addEventListener("load", async () => {
+    window.addEventListener("load", () => {
         // Initialize GUI
         const gui = new dat.GUI({ name: document.title });
 
@@ -47,7 +40,9 @@
         const canvas = document.createElement("canvas");
         document.body.appendChild(canvas);
 
-        new Tasks(gui, canvas).runAll();
+        // Start tutorial
+        const tutorial = new Tutorial(gui, canvas);
+        tutorial.start();
     });
 </script>
 
