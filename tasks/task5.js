@@ -10,6 +10,10 @@ async function task5() {
 
 console.log("task5");
 
+const DEVICE = TASKS.device;
+const GPU = TASKS.gpu;
+const CONTEXT = TASKS.context;
+
 // Write some shader code to compute the heightmap
 const shaders = {
     compute: SHADERS.heatmapCompute,

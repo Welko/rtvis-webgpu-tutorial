@@ -10,6 +10,10 @@ async function task4() {
 
 console.log("task4");
 
+const DEVICE = TASKS.device;
+const GPU = TASKS.gpu;
+const CONTEXT = TASKS.context;
+
 // Write some shader code to draw markers for the trees
 const shader = SHADERS.markers;
 

@@ -21,6 +21,26 @@ const TASKS = {
             .sort(([number1, key1, task1], [number2, key2, task2]) => number1 - number2),
 
     runOne: async (number, key, task) =>  {
+        if (!TASKS.gpu) {
+            TASKS.gpu = navigator.gpu;
+            if (!GPU) {
+                alert("WebGPU is not supported in your browser. Please use/update Chrome or Edge.");
+                return false;
+            }
+        }
+        if (!TASKS.adapter) {
+            TASKS.adapter = await TASKS.gpu.requestAdapter();
+        }
+        if (!TASKS.device) {
+            TASKS.device = await TASKS.adapter.requestDevice();
+        }
+        if (!TASKS.context) {
+            TASKS.context = CANVAS.getContext("webgpu");
+            TASKS.context.configure({
+                device: TASKS.device,
+                format: TASKS.gpu.getPreferredCanvasFormat()
+            });
+        }
         if (!TASKS.trees) {
             TASKS.trees = await LOADER.loadTrees();
         }
@@ -56,6 +76,10 @@ const TASKS = {
     },
 
     // Loaded if needed as soon as TASKS.runOne() is called
+    gpu: null,
+    adapter: null,
+    device: null,
+    context: null,
     trees: null, 
     lotsOfTrees: null,
     map: null,

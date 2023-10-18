@@ -40,7 +40,7 @@
 
 <script>
     // Declare global variables
-    let GUI, CANVAS, GPU, ADAPTER, DEVICE, CONTEXT;
+    let GUI, CANVAS;
 
     window.addEventListener("load", async () => {
         // Initialize GUI
@@ -49,20 +49,6 @@
         // Initialize canvas
         CANVAS = document.createElement("canvas");
         document.body.appendChild(CANVAS);
-
-        // Initialize WebGPU
-        GPU = navigator.gpu;
-        if (!GPU) {
-            alert("WebGPU is not supported in your browser. Please use/update Chrome or Chromium instead.");
-            return;
-        }
-        ADAPTER = await navigator.gpu.requestAdapter();
-        DEVICE = await ADAPTER.requestDevice();
-        CONTEXT = CANVAS.getContext("webgpu");
-        CONTEXT.configure({
-            device: DEVICE,
-            format: GPU.getPreferredCanvasFormat(),
-        });
 
         TASKS.runAll();
     });

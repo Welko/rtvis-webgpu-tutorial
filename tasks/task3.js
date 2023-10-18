@@ -10,6 +10,10 @@ async function task3() {
 
 console.log("task3");
 
+const DEVICE = TASKS.device;
+const GPU = TASKS.gpu;
+const CONTEXT = TASKS.context;
+
 // Write some shader code to draw an image
 const shader = SHADERS.image;
 

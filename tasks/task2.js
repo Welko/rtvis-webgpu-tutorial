@@ -10,6 +10,8 @@ async function task2() {
 
 console.log('task2');
 
+const DEVICE = TASKS.device;
+
 // Load trees data conveniently into TypedArrays (ready to be used with WebGPU)
 const data = TASKS.trees;
 
