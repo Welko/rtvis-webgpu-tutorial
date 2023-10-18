@@ -3,12 +3,12 @@
 To run the tasks, make sure to include all of them in the HTML.
 Just paste this into the HTML file:
 
-<script src="tasks/task1.js"></script>
-<script src="tasks/task2.js"></script>
-<script src="tasks/task3.js"></script>
-<script src="tasks/task4.js"></script>
-<script src="tasks/task5.js"></script>
-<script src="tasks/tasks.js"></script>
+<script src="tasks/_task1.js"></script>
+<script src="tasks/_task2.js"></script>
+<script src="tasks/_task3.js"></script>
+<script src="tasks/_task4.js"></script>
+<script src="tasks/_task5.js"></script>
+<script src="tasks/_tasks.js"></script>
 
 */
 
