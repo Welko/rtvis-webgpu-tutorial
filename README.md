@@ -29,7 +29,7 @@ WebGPU-capable browsers:
 First steps:
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
 - Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
-- Open `tutorial.js` in your favorite IDE. All your code will go there.
+- Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
 
 ## Task 0 - Initialize WebGPU
 
