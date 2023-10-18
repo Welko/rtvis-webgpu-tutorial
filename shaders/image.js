@@ -19,4 +19,6 @@ const UVS = array<vec2f, 6>(
     vec2f(1, 0),
 );
 
+// Your code here :)
+
 `});

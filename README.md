@@ -10,6 +10,8 @@ by Lucas Melo
   - [Task 1 - Compute Shader Basics](#task-1---compute-shader-basics)
   - [Task 2 - Processing Real Data](#task-2---processing-real-data)
   - [Task 3 - Render an Image](#task-3---render-an-image)
+  - [Task 4 - Render Trees as Markers](#task-4---render-trees-as-markers)
+  - [Task 5 - Compute and Render Heatmap](#task-5---compute-and-render-heatmap)
 
 ## Introduction
 
@@ -612,3 +614,320 @@ async render() {
 And, finally, you should see a map of Vienna on your screen.
 
 <img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
+
+## Task 4 - Render Trees as Markers
+
+Duration: 20 minutes
+
+<img src="images/task4.png" alt="A map of Vienna with one semi-transparent square marker per tree, the result of task 4" height="500">
+
+Finally, in this task, we will get to render our tree data. 
+
+Previously, we had loaded the tree information. Now, in addition to that, we also load the coordinates of the trees.
+
+```javascript
+// GPU Data
+gpuTreeCoordinates;
+
+async initializeBuffers() {
+    ...
+    // TreeCoordinates
+    this.gpuTreeCoodinates = this.device.createBuffer({
+        size: this.trees.getCoordinatesLatLonBuffer().byteLength,
+        usage: GPUBufferUsage.STORAGE,
+        mappedAtCreation: true
+    });
+    new Float32Array(this.gpuTreeCoodinates.getMappedRange()).set(this.trees.getCoordinatesLatLonBuffer());
+    this.gpuTreeCoodinates.unmap();
+}
+```
+
+With this data now available, we move on to this task's shaders.
+
+Open `shaders/markers.js`.
+
+Our vertices and UVs are there again, together with the function `latLonToXY`, that converts latitude and longitude coordinates into XY coordinates in the range [0,1].
+
+As you may have noticed, the function `latLonToXY` uses an object `u` that is not defined anywhere. This is our uniforms. Uniforms are not passed individually to a shader, but through an **uniform buffer**. We will define it now, together with our two other buffers.
+
+```wgsl
+struct TreeCoordinates {
+    lat: f32,
+    lon: f32,
+};
+
+struct TreeInfo {
+    treeHeightCategory: u32,
+    crownDiameterCategory: u32,
+    districtNumber: u32,
+    circumferenceAt1mInCm: u32,
+};
+
+struct Uniforms {
+    mapWidth: f32,
+    mapHeight: f32,
+    mapLatitudeMin: f32,
+    mapLatitudeMax: f32,
+    mapLongitudeMin: f32,
+    mapLongitudeMax: f32,
+    markerSize: f32,
+    unused: f32, // Padding
+    markerColor: vec4f,
+};
+
+@group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
+@group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
+@group(0) @binding(2) var<uniform> u: Uniforms;
+```
+
+Our vertex shader will read from these buffers and use their information to decide where to place vertices and which color to use. Once again, we will not use vertex buffers here.
+
+WebGPU, like other APIs, has **instanced rendering**. That allows us to draw one geometry several times with increased performance due to the reduced number of draw calls.
+
+We will **NOT** use instanced rendering here. Instead, we go even more hardcore and derive the index of our (fake) instance based on its **vertex index**. Additionally to UV coordinates, we also pass a color to the fragment shader.
+
+```wgsl
+struct VertexInput {
+    @builtin(vertex_index) vertexIndex: u32,
+};
+
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    @location(0) uv: vec2f,
+    @location(1) color: vec4f,
+};
+
+@vertex
+fn vertex(input: VertexInput) -> VertexOutput {
+    // I'm so cool
+    let treeIndex = input.vertexIndex / 6;
+
+    // Get 2D position of tree
+    let latLon = treeCoordinates[treeIndex];
+    let xy = latLonToXY(latLon.lat, latLon.lon) * 2 - 1;
+
+    // Calculate marker position and size
+    let vertex = VERTICES[input.vertexIndex % 6] * u.markerSize + xy;
+
+    // Get tree info
+    let treeInfo = treeInfo[treeIndex];
+
+    // Color based on tree district
+    // THIS IS BAD VISUALIZATION
+    // Ideally, the district number would be mapped into a qualitative color scheme
+    // See colorbrewer2.org for some good ones
+    let color23 = u.markerColor; // Color for Liesing
+    let color1 = vec4f(0, 0, 0, color23.a); // Color for Innere Stadt
+    let blendingFactor = f32(treeInfo.districtNumber - 1) / 22;
+    let color = mix(color1, color23, blendingFactor);
+
+    return VertexOutput(
+        vec4f(vertex, 0, 1),
+        UVS[input.vertexIndex % 6],
+        color,
+    );
+}
+```
+
+And very little work is left for our fragment shader to do.
+
+```wgsl
+struct FragmentInput {
+    @location(0) uv: vec2f,
+    @location(1) color: vec4f,
+};
+
+struct FragmentOutput {
+    @location(0) color: vec4f,
+};
+
+@fragment
+fn fragment(input : FragmentInput) -> FragmentOutput {
+    return FragmentOutput(
+        input.color,
+    );
+}
+```
+
+And now, back to Javascript, we create the uniforms buffer.
+
+```javascript
+// Uniforms
+uniforms = {
+    markerSize: 0.01,
+    markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
+    markerAlpha: 0.01,
+};
+
+// GPU Data
+gpuUniforms;
+
+async initializeBuffers() {
+    ...
+    // Uniforms
+    this.gpuUniforms = this.device.createBuffer({
+        size: 1024, // Allocate 1024 bytes. Enough space for 256 floats/ints/uints (each is 4 bytes). That should be enough
+        // UNIFORM (of course) and COPT_DST so that we can later write to it
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    // Write to the uniforms buffer in render()
+}
+```
+
+Note that we do not write into the uniforms buffer immediately. That is because its data may change very often. Because of that, we will write to it every frame.
+
+```javascript
+async render() {
+    // Copy the uniforms to the GPU buffer
+    // Warning: the layout must match the layout of the uniform buffer in the shader
+    this.device.queue.writeBuffer(this.gpuUniforms, 0, new Float32Array([
+        this.map.width,
+        this.map.height,
+        this.map.latitude.min,
+        this.map.latitude.max,
+        this.map.longitude.min,
+        this.map.longitude.max,
+        this.uniforms.markerSize,
+        0, // Unused
+        this.uniforms.markerColor[0] / 255,
+        this.uniforms.markerColor[1] / 255,
+        this.uniforms.markerColor[2] / 255,
+        this.uniforms.markerAlpha,
+    ]));
+    ...
+}
+```
+
+Now that we have all the buffers set up, we can proceed to creating our **pipeline** and **bind group** for the new shaders.
+
+```javascript
+// Pipelines
+markerRenderPipeline;
+
+// Bind Groups
+markersBindGroup;
+
+async initializePipelines() {
+    ...
+    const markersShaderModule = this.device.createShaderModule({ code: SHADERS.markers });
+    this.markersRenderPipeline = this.device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: markersShaderModule,
+            entryPoint: "vertex",
+            // buffers: We don't need any vertex buffer :)
+        },
+        fragment: {
+            module: markersShaderModule,
+            entryPoint: "fragment",
+            targets: [{
+                format: this.gpu.getPreferredCanvasFormat()
+            }]
+        }
+    });
+}
+
+async initializeBindGroups() {
+    ...
+    this.markersBindGroup = this.device.createBindGroup({
+        layout: this.markersRenderPipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: { buffer: this.gpuTreeCoodinates } },
+            { binding: 1, resource: { buffer: this.gpuTreeInfo } },
+            { binding: 2, resource: { buffer: this.gpuUniforms } },
+        ]
+    });
+}
+```
+
+And now finally we can render the markers! We can render them immediately after the map, in the same render pass.
+
+```javascript
+async render() {
+    ...
+    const commandEncoder = this.device.createCommandEncoder();
+    {
+        const renderPass = commandEncoder.beginRenderPass({
+            colorAttachments: [this.colorAttachment]
+        });
+
+        // Render map
+        renderPass.setPipeline(this.imageRenderPipeline);
+        renderPass.setBindGroup(0, this.imageBindGroup);
+        renderPass.draw(6); // One quad
+
+        // Render markers
+        renderPass.setPipeline(this.markersRenderPipeline);
+        renderPass.setBindGroup(0, this.markersBindGroup);
+        renderPass.draw(6 * this.trees.getNumTrees()); // As many quads as we have trees
+
+        renderPass.end();
+    }
+    const commandBuffer = commandEncoder.finish();
+    this.device.queue.submit([commandBuffer]);
+}
+```
+
+And, with that, you should be able to finally see the tree markers on the screen!
+
+To load more trees, go back to where you load the date (`initializeBuffers()`) and pass a `true` to `loadTrees()`, like so:
+
+```javascript
+this.trees = await LOADER.loadTrees(true); // Load 219,378 trees
+```
+
+**BONUS 1/2!** Activate blending (i.e., transparency)
+
+```javascript
+async initializePipelines() {
+    ...
+    this.markersRenderPipeline = this.device.createRenderPipeline({
+        ...
+        fragment: {
+            module: markersShaderModule,
+            entryPoint: "fragment",
+            targets: [{
+                format: this.gpu.getPreferredCanvasFormat(),
+                blend: { // This activates for blending!
+                    color: {
+                        operation: "add",
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                    },
+                    alpha: {
+                        operation: "add",
+                        srcFactor: "src-alpha",
+                        dstFactor: "one-minus-src-alpha",
+                    }
+                }
+            }]
+        }
+    });
+}
+```
+
+**BONUS 2/2!** Add UI controls
+
+```javascript
+async initializeGUI() {
+    const onChange = () => this.render();
+    [
+        this.gui.add(this.uniforms, "markerSize", 0.001, 0.1, 0.001),
+        this.gui.addColor(this.uniforms, "markerColor"),
+        this.gui.add(this.uniforms, "markerAlpha", 0.01, 1, 0.01),
+    ]
+    .forEach((controller) => controller.onChange(onChange));
+}
+```
+
+And so we're done! Your map should have markers, just like the one in the screenshot below.
+
+<img src="images/task4.png" alt="A map of Vienna with one semi-transparent square marker per tree, the result of task 4" height="500">
+
+## Task 5 - Compute and Render Heatmap
+
+<img src="images/task5.png" alt="A map of Vienna an overlaid heatmap of tree frequency, the result of task 5" height="500">
+
+
+
+<img src="images/task5.png" alt="A map of Vienna an overlaid heatmap of tree frequency, the result of task 5" height="500">

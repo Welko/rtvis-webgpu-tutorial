@@ -4,7 +4,6 @@ class Tutorial {
         await this.initializeWebGPU();
         await this.initializeBuffers();
         await this.initializeTextures();
-        await this.initializeUniforms();
         await this.initializePipelines();
         await this.initializeBindGroups();
         await this.initializeAttachments();
@@ -44,10 +43,6 @@ class Tutorial {
     }
 
     async initializeTextures() {
-        
-    }
-
-    async initializeUniforms() {
         
     }
 
