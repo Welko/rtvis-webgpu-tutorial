@@ -140,6 +140,7 @@ loadMap: async() => {
 
     for (const image of Object.values(map.images)) {
         if (image.width !== image.height) {
+            // Why? I forgot. TODO: Find out why
             throw new Error(`Image ${image.src} must be square but is ${image.width}x${image.height}`);
         }
     }
