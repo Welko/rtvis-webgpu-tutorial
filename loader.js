@@ -81,7 +81,7 @@ loadTrees: async (lots=false) => {
     // Get buffers
     const buffers = {
         latLon: treeStore.getCoordinatesLatLonBuffer(),
-        size: treeStore.getInfoBuffer(),
+        info: treeStore.getInfoBuffer(),
     };
 
     // Parse the CSV lines
@@ -107,10 +107,10 @@ loadTrees: async (lots=false) => {
         // Store the values in the buffers
         buffers.latLon[i * 2] = latLon[0];
         buffers.latLon[i * 2 + 1] = latLon[1];
-        buffers.size[i * 4] = treeHeightCategory;
-        buffers.size[i * 4 + 1] = crownDiameterCategory;
-        buffers.size[i * 4 + 2] = district;
-        buffers.size[i * 4 + 3] = circumference;
+        buffers.info[i * 4] = treeHeightCategory;
+        buffers.info[i * 4 + 1] = crownDiameterCategory;
+        buffers.info[i * 4 + 2] = district;
+        buffers.info[i * 4 + 3] = circumference;
 
         // Store the remaining values in the more general data structure
         treeStore.getOtherData()[i] = {
