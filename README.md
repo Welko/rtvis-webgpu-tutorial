@@ -1443,6 +1443,6 @@ async initializeGUI() {
 
 <img src="images/task5.png" alt="A map of Vienna an overlaid heatmap of tree frequency, the result of task 5" height="500">
 
-## CONGLATURATION !!!
+## Congrats!
 
 That concludes the tutorial `:)`
