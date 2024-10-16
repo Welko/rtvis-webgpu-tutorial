@@ -57,7 +57,7 @@ baumkatogdCsvColumnEnum: {
 /**
  * @param {boolean} lots True if we should load LOTS OF TREES (219,378 of them)
  *                       False (default) loads only 100 trees
- * @returns {TreeStore}
+ * @returns {Promise<TreeStore>}
  */
 loadTrees: async (lots=false) => {
     const file = `/data/BAUMKATOGD-${lots?219378:100}.csv`;
@@ -89,6 +89,10 @@ loadTrees: async (lots=false) => {
         // Split the line by comma, but ignore commas inside double quotes
         // Source: https://stackoverflow.com/questions/11456850/split-a-string-by-commas-but-ignore-commas-within-double-quotes-using-javascript
         const csvValues = csvLines[i + 1].match(/(?:[^",]+|"[^"]*")+|^(?=,)|(?<=,)/g);
+        if (csvValues === null) {
+            console.error(`Error parsing CSV line ${i + 1}: ${csvLines[i + 1]}`);
+            continue;
+        }
 
         // Extract latitude and longitude
         const lonLat = csvValues[LOADER.baumkatogdCsvColumnEnum.SHAPE];

@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "target": "ES2023",
+        "types": ["./lib/webgpu.d.ts"]
+    },
+    "include": ["./*.js"],
+}

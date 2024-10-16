@@ -117,7 +117,7 @@ class TreeProxy {
     }
 
     getTotalHeightRange() {
-        return this.#getSizeCategoryRange(this.getHeightCategory());
+        return this.#getSizeCategoryRange(this.getTotalHeightCategory());
     }
 
     getCrownDiameterCategory() {
@@ -182,7 +182,7 @@ class TreeProxy {
      * @returns {null | [number, number]} The min and max height in meters or null if unknown
      */
     #getSizeCategoryRange(category) {
-        switch (this.getHeightCategory()) {
+        switch (this.getTotalHeightCategory()) {
             case 0: return null; // Unbekannt
             case 1: return [0, 5]; // 0-5 Meter
             case 2: return [6, 10]; // 6-10 Meter
