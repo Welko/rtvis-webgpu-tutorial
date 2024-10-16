@@ -17,17 +17,8 @@ class Tutorial {
         this.canvas = canvas;
     }
 
-    // GUI
-    gui;
-    canvas;
-
     // From here on, it is up to you to implement the tutorial
     // ----------------------------------------------------------------------------------------------------
-
-    // WebGPU
-    gpu;
-    adapter;
-    device;
 
     async initializeWebGPU() {
         if (!this.gpu) {

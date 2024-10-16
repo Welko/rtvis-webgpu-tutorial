@@ -17,65 +17,8 @@ class Tutorial {
         this.canvas = canvas;
     }
 
-    // GUI
-    gui;
-    canvas;
-
     // From here on, it is up to you to implement the tutorial
     // ----------------------------------------------------------------------------------------------------
-
-    // WebGPU
-    gpu;
-    adapter;
-    device;
-    context;
-
-    // CPU Data
-    trees;
-    map;
-
-    // GPU Data
-    gpuTreeCoodinates
-    gpuTreeInfo;
-    gpuMapTexture;
-    gpuUniforms;
-
-    // Samplers
-    sampler;
-
-    // Layouts
-    heatmapComputeBindGroupLayout;
-    heatmapComputePipelineLayout;
-
-    // Pipelines
-    imageRenderPipeline;
-    markersRenderPipeline;
-    heatmapComputeClearPipeline;
-    heatmapComputeCountPipeline;
-    heatmapComputeMaxPipeline;
-    heatmapRenderPipeline;
-
-    // Bind Groups
-    imageBindGroup;
-    markersBindGroup;
-    heatmapComputeBindGroup;
-    heatmapRenderBindGroup;
-
-    // Attachments
-    colorAttachment;
-
-    // Uniforms
-    uniforms = {
-        markerSize: 0.01,
-        markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
-        markerAlpha: 0.01,
-        gridWidth: 50,
-        gridHeight: 50,
-    };
-
-    // Constants
-    GRID_MAX_WIDTH = 200;
-    GRID_MAX_HEIGHT = 200;
 
     async initializeWebGPU() {
         if (!this.gpu) {
@@ -119,6 +62,13 @@ class Tutorial {
         this.gpuTreeCoodinates.unmap();
 
         // Uniforms
+        this.uniforms = {
+            markerSize: 0.01,
+            markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
+            markerAlpha: 0.01,
+            gridWidth: 50,
+            gridHeight: 50,
+        };
         this.gpuUniforms = this.device.createBuffer({
             size: 1024, // Allocate 1024 bytes. Enough space for 256 floats/ints/uints (each is 4 bytes). That should be enough
             // UNIFORM (of course) and COPT_DST so that we can later write to it
@@ -127,6 +77,8 @@ class Tutorial {
         // Write to the uniforms buffer in render()
 
         // Cells
+        this.GRID_MAX_WIDTH = 200;
+        this.GRID_MAX_HEIGHT = 200;
         this.gpuGridCells = this.device.createBuffer({
             // Reserve enough space for the maximum number of cells
             size: this.GRID_MAX_WIDTH * this.GRID_MAX_HEIGHT * Uint32Array.BYTES_PER_ELEMENT,

@@ -17,30 +17,8 @@ class Tutorial {
         this.canvas = canvas;
     }
 
-    // GUI
-    gui;
-    canvas;
-
     // From here on, it is up to you to implement the tutorial
     // ----------------------------------------------------------------------------------------------------
-
-    // WebGPU
-    gpu;
-    adapter;
-    device;
-
-    // CPU Data
-    trees;
-
-    // GPU Data
-    gpuTreeInfo;
-    gpuAggregatedValues;
-
-    // Pipelines
-    aggregatePipeline;
-
-    // Bind Groups
-    aggregateBindGroup;
 
     async initializeWebGPU() {
         if (!this.gpu) {

@@ -17,49 +17,8 @@ class Tutorial {
         this.canvas = canvas;
     }
 
-    // GUI
-    gui;
-    canvas;
-
     // From here on, it is up to you to implement the tutorial
     // ----------------------------------------------------------------------------------------------------
-
-    // WebGPU
-    gpu;
-    adapter;
-    device;
-    context;
-
-    // CPU Data
-    trees;
-    map;
-
-    // GPU Data
-    gpuTreeCoodinates
-    gpuTreeInfo;
-    gpuMapTexture;
-    gpuUniforms;
-
-    // Samplers
-    sampler;
-
-    // Pipelines
-    imageRenderPipeline;
-    markersRenderPipeline
-
-    // Bind Groups
-    imageBindGroup;
-    markersBindGroup;
-
-    // Attachments
-    colorAttachment;
-
-    // Uniforms
-    uniforms = {
-        markerSize: 0.01,
-        markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
-        markerAlpha: 0.01,
-    };
 
     async initializeWebGPU() {
         if (!this.gpu) {
@@ -103,6 +62,11 @@ class Tutorial {
         this.gpuTreeCoodinates.unmap();
 
         // Uniforms
+        this.uniforms = {
+            markerSize: 0.01,
+            markerColor: [255, 0, 0], // The screenshots use [117, 107, 177]
+            markerAlpha: 0.01,
+        };
         this.gpuUniforms = this.device.createBuffer({
             size: 1024, // Allocate 1024 bytes. Enough space for 256 floats/ints/uints (each is 4 bytes). That should be enough
             // UNIFORM (of course) and COPT_DST so that we can later write to it
