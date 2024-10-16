@@ -427,17 +427,17 @@ gpuMapTexture;
 async initializeTextures() {
     ...
     const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
-    this.this.gpuMapTexture = this.device.createTexture({
-        size: [image.width, image.height],
-        format: "rgba8unorm",
-        // TEXTURE_BINDING is needed to bind the texture to the pipeline
-        // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
-        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+    this.gpuMapTexture = this.device.createTexture({
+      size: [image.width, image.height],
+      format: "rgba8unorm",
+      // TEXTURE_BINDING is needed to bind the texture to the pipeline
+      // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+      usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
     });
     this.device.queue.copyExternalImageToTexture(
-        {source: image, flipY: true}, // Source
-        {texture: this.gpuTexture}, // Destination
-        [image.width, image.height] // Size
+          {source: image, flipY: true}, // Source
+          {texture: this.gpuMapTexture}, // Destination
+          [image.width, image.height] // Size
     );
 }
 ```
@@ -558,7 +558,7 @@ async initializeBindGroups() {
     this.imageBindGroup = this.device.createBindGroup({
         layout: this.imageRenderPipeline.getBindGroupLayout(0),
         entries: [
-            { binding: 0, resource: this.gpuTexture.createView() },
+            { binding: 0, resource: this.gpuMapTexture.createView() },
             { binding: 1, resource: this.sampler },
         ]
     });
