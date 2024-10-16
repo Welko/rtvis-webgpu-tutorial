@@ -12,17 +12,17 @@ by Lucas Melo
   - [Task 3 - Render an Image](#task-3---render-an-image)
   - [Task 4 - Render Trees as Markers](#task-4---render-trees-as-markers)
   - [Task 5 - Compute and Render Heatmap](#task-5---compute-and-render-heatmap)
-  - [CONGLATURATION !!!](#conglaturation-)
+  - [Congrats!](#congrats)
 
 ## Introduction
 
 **Welcome to the Real Time Visualization WebGPU Tutorial!**
 
-This is a 90 minute tutorial. It consists of 5 tasks. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
+This is a 90 minutes tutorial. It consists of 5 tasks. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
 
 WebGPU-capable browsers:
 - Windows/Mac: Edge or Chrome
-- Linux: Chromium
+- Linux: Chromium (Chrome might also work already)
   - Install from here: [https://github.com/scheib/chromium-latest-linux](https://github.com/scheib/chromium-latest-linux)
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
 
@@ -38,7 +38,7 @@ Other resources:
 
 ## Task 0 - Initialize WebGPU
 
-Unlike WebGL, WebGPU **does not need a canvas**. It can be used only for its compute capabilites.
+Unlike WebGL, WebGPU **does not need a canvas**. It can be used only for its compute capabilities.
 
 ```javascript
 async initializeWebGPU() {
@@ -181,7 +181,7 @@ async initializeBindGroups() {
 }
 ```
 
-There is last thing left before executing our pipeline. The pipeline with its bind group is executed through a **command**. Commands in WebGPU are encoded in batch, so that they can all be sent to the GPU at once. That is done via a **command encoder**.
+There is one last thing left before executing our pipeline. The pipeline with its bind group is executed through a **command**. Commands in WebGPU are encoded in batch, so that they can all be sent to the GPU at once. That is done via a **command encoder**.
 
 ```javascript
 render() {
@@ -245,7 +245,7 @@ async readBuffer(gpuBuffer, outputArray) {
 }
 ```
 
-**Important!** In order for our buffer to be copied, it must contain the flag `GPUBufferUsage.COPY_SRC`. So now it will contain the following: `usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC`.
+**Important!** In order for our buffer to be copied, it must contain the flag `GPUBufferUsage.COPY_SRC`. So we'll now update its usage to contain the following: `usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC`.
 
 The last thing left to do is print our data on the console!
 
@@ -405,7 +405,7 @@ Duration: 10 minutes
 
 <img src="map/vienna-satellite.png" alt="A map of Vienna, the result of task 3" height="500">
 
-Finally we will render something on the screen. In this case, it will be just a simple texture.
+Finally, we will render something on the screen. In this case, it will be just a simple texture.
 
 The first step is to load our map data, which includes four images of Vienna: satellite, streets, outdoors, and height
 
@@ -697,7 +697,7 @@ Our vertex shader will read from these buffers and use their information to deci
 
 WebGPU, like other APIs, has **instanced rendering**. That allows us to draw one geometry several times with increased performance due to the reduced number of draw calls.
 
-We will **NOT** use instanced rendering here. Instead, we go even more hardcore and derive the index of our (fake) instance based on its **vertex index**. Additionally to UV coordinates, we also pass a color to the fragment shader.
+We will **NOT** use instanced rendering here. Instead, we go even more hardcore and derive the index of our (fake) instance based on its **vertex index**. In addition to UV coordinates, we also pass a color to the fragment shader.
 
 ```wgsl
 struct VertexInput {
@@ -1394,7 +1394,7 @@ Now we render the heatmap to see if we did everything right so far.
     }
 ```
 
-You should now see a a red gradient over the map.
+You should now see a red gradient over the map.
 
 Uncomment our buffer bindings.
 
