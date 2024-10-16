@@ -153,7 +153,7 @@ async initializePipelines() {
         layout: "auto", // Bad practice. Good enough for a tutorial though
         compute: {
             module: this.device.createShaderModule({
-                code: shader
+                code: window.SHADERS.add
             }),
             entryPoint: "main" // Name of the entry point function in the shader
         }
@@ -195,7 +195,7 @@ render() {
     }
     const commandBuffer = commandEncoder.finish();
     this.device.queue.submit([commandBuffer]);
-    console.log(await this.readBuffer(this.buffer, this.data.byteLength));
+    console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
 }
 ```
 

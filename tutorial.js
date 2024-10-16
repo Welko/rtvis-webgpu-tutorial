@@ -25,7 +25,7 @@ class Tutorial {
     // ----------------------------------------------------------------------------------------------------
 
     async initializeWebGPU() {
-        
+
     }
 
     async initializeBuffers() {
@@ -56,7 +56,7 @@ class Tutorial {
 
     }
 
-    async readBuffer(buffer, size) {
+    async readBuffer(gpuBuffer, outputArray) {
 
     }
 
