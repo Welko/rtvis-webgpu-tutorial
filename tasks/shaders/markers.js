@@ -74,6 +74,12 @@ fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     );
 }
 
+fn toMarkerColor(districtIndex: u32) -> vec3<f32> {
+    // This number changes the color scheme
+    let magicNumber = 555555u;
+    return unpack4x8unorm(((districtIndex % 127) + 1) * magicNumber).rgb;
+}
+
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
     let treeIndex = input.vertexIndex / 6;
@@ -93,6 +99,9 @@ fn vertex(input: VertexInput) -> VertexOutput {
     let color1 = vec4f(0, 0, 0, color23.a);
     let blendingFactor = f32(treeInfo.districtNumber - 1) / 22;
     let color = mix(color1, color23, blendingFactor);
+    
+    // bonus 3
+    color = vec4f(toMarkerColor(treeInfo.districtNumber - 1), u.markerColor.a);
 
     return VertexOutput(
         vec4f(vertex, 0, 1),

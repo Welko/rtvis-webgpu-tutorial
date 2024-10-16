@@ -889,7 +889,7 @@ To load more trees, go back to where you load the date (`initializeBuffers()`) a
 this.trees = await LOADER.loadTrees(true); // Load 219,378 trees
 ```
 
-**BONUS 1/2!** Activate blending (i.e., transparency)
+**BONUS 1/3!** Activate blending (i.e., transparency)
 
 ```javascript
 async initializePipelines() {
@@ -919,7 +919,7 @@ async initializePipelines() {
 }
 ```
 
-**BONUS 2/2!** Add UI controls
+**BONUS 2/3!** Add UI controls
 
 ```javascript
 async initializeGUI() {
@@ -930,6 +930,28 @@ async initializeGUI() {
         this.gui.add(this.uniforms, "markerAlpha", 0.01, 1, 0.01),
     ]
     .forEach((controller) => controller.onChange(onChange));
+}
+```
+
+**BONUS 3/3!** Another (still bad) color scheme
+
+```wgsl
+fn toMarkerColor(districtIndex: u32) -> vec3<f32> {
+    // THIS IS STILL BAD VISUALIZATION
+    // Ideally, the district number would be mapped into a qualitative color scheme
+    // See colorbrewer2.org for some good ones
+
+    // This number changes the color scheme
+    let magicNumber = 555555u;
+    return unpack4x8unorm(((districtIndex % 127) + 1) * magicNumber).rgb;
+}
+
+@vertex
+fn vertex(input: VertexInput) -> VertexOutput {
+    ...
+    // Color based on tree district
+    let color = vec4f(toMarkerColor(treeInfo.districtNumber - 1), u.markerColor.a);
+    ....
 }
 ```
 
