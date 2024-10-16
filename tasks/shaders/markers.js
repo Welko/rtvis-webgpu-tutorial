@@ -98,7 +98,7 @@ fn vertex(input: VertexInput) -> VertexOutput {
     let color23 = u.markerColor;
     let color1 = vec4f(0, 0, 0, color23.a);
     let blendingFactor = f32(treeInfo.districtNumber - 1) / 22;
-    let color = mix(color1, color23, blendingFactor);
+    var color = mix(color1, color23, blendingFactor);
     
     // bonus 3
     color = vec4f(toMarkerColor(treeInfo.districtNumber - 1), u.markerColor.a);
