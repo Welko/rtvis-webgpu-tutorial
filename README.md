@@ -1322,15 +1322,15 @@ heatmapRenderBindGroup;
 async initializePipelines() {
     ...
     const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
-    this.markersRenderPipeline = this.device.createRenderPipeline({
+    this.heatmapRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
-            module: markersShaderModule,
+            module: heatmapRenderShaderModule,
             entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
-            module: markersShaderModule,
+            module: heatmapRenderShaderModule,
             entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
@@ -1414,7 +1414,7 @@ async initializeBindGroups() {
 
 Open `shaders/heatmapRender.js`.
 
-Remove the dummy function and instead calculate a color value based on the tree count.
+In our vertex shader, remove the dummy color value and instead calculate a color value based on the tree count.
 
 ```wgsl
 // Map color based on tree count
