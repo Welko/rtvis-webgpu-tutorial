@@ -90,7 +90,7 @@ This is the data that we want to process on the GPU through a compute shader.
 
 Open the compute shader `shaders/add.js`. Note that this is a Javascript file. The shader code is written as a string and stored in the `window` object with the key `add`.
 
-The programming language of WebGPU shaders is `wgsl`. If you are using Visual Studio Code, I recommend you install the extension [WGSL Literal](https://marketplace.visualstudio.com/items?itemName=ggsimm.wgsl-literal).
+The programming language of WebGPU shaders is `wgsl`. If you are using Visual Studio Code, we recommend you install the extension [WGSL Literal](https://marketplace.visualstudio.com/items?itemName=ggsimm.wgsl-literal).
 
 The first thing we'll add here is the **buffer binding**.
 
