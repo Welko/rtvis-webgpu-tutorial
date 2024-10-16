@@ -11,7 +11,7 @@ by Lucas Melo and Lukas Herzberger
   - [Task 2 - Processing Real Data](#task-2---processing-real-data)
   - [Task 3 - Render an Image](#task-3---render-an-image)
   - [Task 4 - Render Trees as Markers](#task-4---render-trees-as-markers)
-  - [Task 5 - Compute and Render Heatmap](#task-5---compute-and-render-heatmap)
+  - [Bonus Task - Compute and Render Heatmap](#task-5---compute-and-render-heatmap)
 
 ## Introduction
 
@@ -886,7 +886,7 @@ And so we're done! Your map should have markers, just like the one in the screen
 
 <img src="images/task4.png" alt="A map of Vienna with one semi-transparent square marker per tree, the result of task 4" height="500">
 
-## Task 5 - Compute and Render Heatmap
+## Bonus Task - Compute and Render Heatmap
 
 Duration: 30 minutes
 
@@ -1031,12 +1031,15 @@ async initializeBuffers() {
 Because we now introduced two new uniforms, we also set them up.
 
 ```javascript
-// Uniforms
-uniforms = {
+async initializeBuffers() {
     ...
-    gridWidth: 50,
-    gridHeight: 50,
-};
+    this.uniforms = {
+        ...
+        gridWidth: 50,
+        gridHeight: 50,
+    };
+    ...
+}
 
 async render() {
     this.device.queue.writeBuffer(this.gpuUniforms, 0, new Float32Array([
@@ -1051,10 +1054,6 @@ async render() {
 Now, for the creation of the **pipeline** and **bind group** of our shaders. Because we have three entry points in our shader, we will need **three pipelines** that use the same **bind group**. So far, we've been using the pipeline's `"auto"` layout, and its `getBindGroupLayout()` function. However, in order to share the **bind group** among **pipelines**, we now need to create this layout manually.
 
 ```javascript
-// Layouts
-heatmapComputeBindGroupLayout;
-heatmapComputePipelineLayout;
-
 async initializeLayouts() {
     this.heatmapComputeBindGroupLayout = this.device.createBindGroupLayout({
         entries: [
@@ -1077,14 +1076,6 @@ async initializeLayouts() {
 With the layouts created, we can then create the **pipelines** and the **bind group** as per usual
 
 ```javascript
-// Pipelines
-heatmapComputeClearPipeline;
-heatmapComputeCountPipeline;
-heatmapComputeMaxPipeline;
-
-// Bind Groups
-heatmapComputeBindGroup;
-
 async initializePipelines() {
     ...
     const pipelineDescriptor = {
@@ -1235,7 +1226,7 @@ fn vertex(input: VertexInput) -> VertexOutput {
 }
 ```
 
-Note that we are assigning a random color to each grid cell. Later, we will calculate it based on its tree count. For now, for debug purposes, we keep it like this.
+Note that we are assigning an arbitrary color to each grid cell. Later, we will calculate it based on its tree count. For now, for debug purposes, we keep it like this.
 
 Once again, the fragment shader doesn't do much.
 
@@ -1260,12 +1251,6 @@ fn fragment(input : FragmentInput) -> FragmentOutput {
 With the shader created, we go back to Javascript and introduce our new **pipeline** and **bind group**.
 
 ```javascript
-// Pipelines
-heatmapRenderPipeline;
-
-// Bind Groups
-heatmapRenderBindGroup;
-
 async initializePipelines() {
     ...
     const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
