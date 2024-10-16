@@ -153,7 +153,7 @@ async initializePipelines() {
         layout: "auto", // Bad practice. Good enough for a tutorial though
         compute: {
             module: this.device.createShaderModule({
-                code: window.SHADERS.add
+                code: SHADERS.add
             }),
             entryPoint: "main" // Name of the entry point function in the shader
         }
@@ -277,14 +277,23 @@ async initializeBuffers() {
     this.trees = await LOADER.loadTrees(); // Load 100 trees
 
     // TreeInfo
-    this.buffer = this.device.createBuffer({
+    this.gpuTreeInfo = this.device.createBuffer({
         size: this.trees.getInfoBuffer().byteLength,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
         mappedAtCreation: true,
     });
     // Attention! Now it's a Uint32Array, not float :)
-    new Uint32Array(this.buffer.getMappedRange()).set(this.trees.getInfoBuffer()); // Write to the buffer
-    this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
+    new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer()); // Write to the buffer
+    this.gpuTreeInfo.unmap(); // Unmap on the CPU so that the GPU can use it
+}
+```
+
+Now we have replaced our `data` array with `trees.getInfoBuffer()` and renamed our `buffer` to `gpuTreeInfo`. This change also needs to be reflected in our `render` function:
+
+```javascript
+async render() {
+    ...
+    console.log(await this.readBuffer(this.gpuTreeInfo, new Uint32Array(this.trees.getInfoBuffer().length)));
 }
 ```
 
