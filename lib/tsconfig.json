@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "target": "ES2023",
+        "lib": ["ES2023", "DOM"],
+        "typeRoots": ["./"],
+        "types": ["webgpu.d.ts"]
+    },
+    "include": ["./generate-mipmap.ts"]
+}
