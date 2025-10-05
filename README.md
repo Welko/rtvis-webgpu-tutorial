@@ -149,7 +149,9 @@ Now that our shader is done, we move back to `tutorial.js` and define the GPU pi
 ```javascript
 async initializePipelines() {
     this.pipeline = this.device.createComputePipeline({
-        layout: "auto", // Bad practice. Good enough for a tutorial though
+        // Use simplistic auto-generation
+        // Bigger applications will manually generate a layout, and share it acros muliple shaders
+        layout: "auto", 
         compute: {
             module: this.device.createShaderModule({
                 code: SHADERS.add
@@ -167,9 +169,9 @@ We create this connection via a **bind group** (a group of bindings).
 ```javascript
 async initializeBindGroups() {
     this.bindGroup = this.device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0), // Ideally created manually, but this is good enough for a tutorial
+        layout: this.pipeline.getBindGroupLayout(0), // group(0)
         entries: [
-            { // Entry 0
+            {
                 binding: 0, // Matches our shader!
                 resource: {
                     buffer: this.buffer // Our data!
