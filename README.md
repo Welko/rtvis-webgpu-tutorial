@@ -22,9 +22,10 @@ This is a 90 minute tutorial. It consists of 4 tasks and 1 bonus task. By the en
 
 WebGPU-capable browsers:
 - Windows/Mac: Firefox, Chrome, Edge
-- Linux: Chromium
+- Linux: Firefox Nightly or Chromium
   - Install from here: [https://github.com/scheib/chromium-latest-linux](https://github.com/scheib/chromium-latest-linux)
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
+- MacOS: Safari, when running on macOS Tahoe 26 or later
 
 First steps:
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
