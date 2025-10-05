@@ -150,7 +150,7 @@ Now that our shader is done, we move back to `tutorial.js` and define the GPU pi
 async initializePipelines() {
     this.pipeline = this.device.createComputePipeline({
         // Use simplistic auto-generation
-        // Bigger applications will manually generate a layout, and share it acros muliple shaders
+        // Bigger applications will manually generate a layout, and share it across muliple shaders
         layout: "auto", 
         compute: {
             module: this.device.createShaderModule({
