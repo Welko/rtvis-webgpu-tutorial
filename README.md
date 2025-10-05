@@ -2,7 +2,7 @@
 
 # Real Time Visualization WebGPU Tutorial
 
-by Lucas Melo and Lukas Herzberger
+by Lucas Melo, Lukas Herzberger, Patrick Kommon, Stefan Notch
 
 - [Real Time Visualization WebGPU Tutorial](#real-time-visualization-webgpu-tutorial)
   - [Introduction](#introduction)
@@ -20,7 +20,7 @@ by Lucas Melo and Lukas Herzberger
 This is a 90 minute tutorial. It consists of 4 tasks and 1 bonus task. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
 
 WebGPU-capable browsers:
-- Windows/Mac: Edge or Chrome
+- Windows/Mac: Firefox, Chrome, Edge
 - Linux: Chromium
   - Install from here: [https://github.com/scheib/chromium-latest-linux](https://github.com/scheib/chromium-latest-linux)
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
