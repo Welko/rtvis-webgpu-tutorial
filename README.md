@@ -53,6 +53,9 @@ async initializeWebGPU() {
 }
 ```
 
+// TODO: Tell people to open the browser Inspect/developer thingy
+// Not everybody knows that, I guess :)
+
 ![Result of task 0: WebGPU is supported!](images/task0.png)
 
 ## Task 1 - Compute Shader Basics
@@ -208,6 +211,8 @@ The solution: We must create a separate buffer to copy our data into.
 
 In this part, we skip the details and encourage you to understand it in more detail on your own at another time.
 
+// TODO: Maybe include this function in the code already, instead of people needing to copy-paste it?
+
 ```javascript
 async readBuffer(gpuBuffer, outputArray) {
     // This buffer can be read on the CPU because of MAP_READ
@@ -239,8 +244,9 @@ async readBuffer(gpuBuffer, outputArray) {
 
 **Important!** In order for our buffer to be copied, it must contain the flag `GPUBufferUsage.COPY_SRC`. So now it will contain the following:
 
+// TODO: People were confused about where to paste this
 ```javascript
-usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC`
+usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
 ```
 
 The last thing left to do is print our data on the console!
@@ -291,6 +297,10 @@ async render() {
 ```
 
 If we now refresh the page, you'll notice that the first 64 values of our buffer are at least 100, as expected.
+// TODO: No :)
+// Uncaught (in promise) TypeError: GPUDevice.createBindGroup: Missing required 'buffer' member of GPUBufferBinding.
+// initializeBindGroups() needs to be changed as well
+// Even when that's fixed, the first 64 elements contain "1120403456"... why? :)
 
 Now we do something more interesting than that. Let us count the number of trees for each district in Vienna. For that, we write a new shader.
 
@@ -363,6 +373,7 @@ Almost done. Now we adjust the number of workgroups we're dispatching. Instead o
 
 Don't forget to also rename the pipeline and bind group we're using.
 
+// TODO: Where to paste this? -> render()
 ```javascript
 const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
 
@@ -375,6 +386,7 @@ computePass.end();
 
 Finally, we can now print the contents of the aggregates buffer.
 
+// TODO: Also in render()
 ```javascript
 console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
 ```
@@ -588,6 +600,10 @@ async render() {
 ```
 
 And, finally, you should see a map of Vienna on your screen.
+
+// TODO: People were confused here why the map looks so bad.
+// It's because of how sampling works... if we had mipmaps, for example, it would look better
+// At least, this image below should reflect that... it should also look "bad" :)
 
 <img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
 
