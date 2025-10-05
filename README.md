@@ -2,7 +2,7 @@
 
 # Real Time Visualization WebGPU Tutorial
 
-by Lucas Melo, Lukas Herzberger, Patrick Komon, Stefan Notch
+by Lucas Melo, Lukas Herzberger, Patrick Komon
 
 
 - [Real Time Visualization WebGPU Tutorial](#real-time-visualization-webgpu-tutorial)
