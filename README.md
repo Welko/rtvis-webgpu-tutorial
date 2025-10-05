@@ -21,11 +21,11 @@ by Lucas Melo, Lukas Herzberger, Patrick Komon, Stefan Notch
 This is a 90 minute tutorial. It consists of 4 tasks and 1 bonus task. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
 
 WebGPU-capable browsers:
-- Windows/Mac: Firefox, Chrome, Edge
+- Windows: Firefox, Chrome, Edge
 - Linux: Firefox Nightly or Chromium
   - Install from here: [https://github.com/scheib/chromium-latest-linux](https://github.com/scheib/chromium-latest-linux)
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
-- MacOS: Safari, when running on macOS Tahoe 26 or later
+- MacOS: Chrome or Safari (macOS Tahoe 26 or later)
 
 First steps:
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
