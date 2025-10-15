@@ -448,6 +448,16 @@ async initializeTextures() {
 }
 ```
 
+Finally, we need to set the render size of the canvas to our image dimensions. This avoids sampling artifacts on the map and lets the browser do the work of downsampling our render output to the actual canvas (css) size.
+```javascript
+async initializeTextures() {
+    ...
+    // Set canvas render size to image dimension
+    this.canvas.width = image.width;
+    this.canvas.height = image.height;
+}
+```
+
 With the texture data set up on the GPU, we begin the process of showing it on the screen. For this tutorial, we will write one vertex shader and one fragment shader, and we will render a quad (two triangles forming a rectangle).
 
 For loading large 3D models, it can be beneficial to create a **vertex buffer**, which is used to feed data into our vertex shader.
@@ -554,10 +564,10 @@ And lastly, the color attachment:
 
 ```javascript
 async initializeAttachments() {
-    // Calculate size of our image and set it to the canvas
+    // Set canvas css size
     const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
-    this.canvas.width = minSide;
-    this.canvas.height = minSide;
+    this.canvas.style.width = minSide + "px";
+    this.canvas.style.height = minSide + "px";
 
     // Color attachment to draw to
     this.colorAttachment = {
