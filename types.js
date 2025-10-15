@@ -15,6 +15,6 @@
  */
 
 /**
- * @type {undefined | Shaders}
+ * @type {Shaders}
  */
 let SHADERS;
