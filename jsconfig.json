@@ -2,7 +2,9 @@
     "compilerOptions": {
         "module": "ESNext",
         "target": "ES2020",
-        "types": ["./lib/webgpu.d.ts"]
+        "types": ["./types.js", "./lib/webgpu.d.ts"],
+        "checkJs": true,
+        "noImplicitAny": true,
     },
-    "include": ["./*.js"],
+    "include": ["./*.js", "./tasks/task5.js"], // TODO: Remove tasks/task5.js
 }

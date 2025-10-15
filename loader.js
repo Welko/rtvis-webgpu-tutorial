@@ -2,20 +2,36 @@ const LOADER = {
 
 serverUrl: "https://raw.githubusercontent.com/Welko/rtvis-webgpu-tutorial/main",
 
+/**
+ * @param {string} url 
+ * @returns {Promise<Response>}
+ */
 load: async (url) => {
     const response = await fetch(url);
     // TODO: Keep track of loading progress
     return response;
 },
 
+/**
+ * @param {string} url 
+ * @returns {Promise<string>}
+ */
 loadString: async (url) => {
     return (await LOADER.load(url)).text();
 },
 
+/**
+ * @param {string} url 
+ * @returns {Promise<any>}
+ */
 loadJson: async (url) => {
     return JSON.parse(await LOADER.loadString(url));
 },
 
+/**
+ * @param {string} url 
+ * @returns {Promise<HTMLImageElement>}
+ */
 loadImage: async (url) => {
     return new Promise(resolve => {
         const image = new Image();
@@ -28,8 +44,10 @@ loadImage: async (url) => {
 /**
  * List of the columns in the CSV files, in order of how they appear in the CSV
  * Source: https://www.data.gv.at/katalog/dataset/c91a4635-8b7d-43fe-9b27-d95dec8392a7
+ * 
  */
-baumkatogdCsvColumnList: [
+
+baumkatogdCsvColumnList: /** @type {const} */([
     "FID", // Apparently the string "BAUMKATOGD.<objectId>"
     "OBJECTID", // Not sure what this means
     "SHAPE", // Geographical coordaintes in the format "POINT (<longitude> <latitude>)"
@@ -49,7 +67,11 @@ baumkatogdCsvColumnList: [
     "KRONENDURCHMESSER_TXT", // DE: Größenkategorien der Kronendurchmesser in Textformat direkt aus Quelldatenbank, Leereinträge werden in Text "nicht bekannt" umgewandelt | EN: Size categories of crown diameters in text format directly from source database, empty entries are converted to text "nicht bekannt"
     "BAUMNUMMER", // DE: Nummer des Baumes | EN: Number of the tree
     "SE_ANNO_CAD_DATA", // Not sure what this means. Often empty
-],
+]),
+
+/**
+ * @type {Record<string, number>}
+ */
 baumkatogdCsvColumnEnum: {
     // Automatically generated based on the order of the elements in column list (see the end of this file)
 },
@@ -118,8 +140,6 @@ loadTrees: async (lots=false) => {
 
         // Store the remaining values in the more general data structure
         treeStore.getOtherData()[i] = {
-            latitude: latLon[0],
-            longitude: latLon[1],
             locationId: parseInt(csvValues[LOADER.baumkatogdCsvColumnEnum.OBJECTID]),
             location: csvValues[LOADER.baumkatogdCsvColumnEnum.OBJEKT_STRASSE],
             treeId: parseInt(csvValues[LOADER.baumkatogdCsvColumnEnum.BAUM_ID]),

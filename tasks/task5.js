@@ -12,6 +12,10 @@ class Tutorial {
         await this.render();
     }
 
+    /**
+     * @param {any} gui 
+     * @param {HTMLCanvasElement} canvas 
+     */
     constructor(gui, canvas) {
         this.gui = gui;
         this.canvas = canvas;
@@ -180,7 +184,7 @@ class Tutorial {
             layout: this.heatmapComputePipelineLayout,
             compute: {
                 module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
-                entryPoint: null // Set for each pipeline
+                entryPoint: "" // Set for each pipeline
             }
         };
         pipelineDescriptor.compute.entryPoint = "clear";
@@ -263,11 +267,12 @@ class Tutorial {
 
     async initializeAttachments() {
         // Calculate size of our image and set it to the canvas
-        const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
+        const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
         this.canvas.width = minSide;
         this.canvas.height = minSide;
 
         // Color attachment to draw to
+        /** @type {GPURenderPassColorAttachment} */
         this.colorAttachment = {
             view: null, // Will be set in render(), i.e., every frame
             loadOp: "clear",
@@ -288,6 +293,13 @@ class Tutorial {
         .forEach((controller) => controller.onChange(onChange));
     }
 
+    /**
+     * @template {Float32Array | Uint32Array | Int32Array} T
+     * 
+     * @param {GPUBuffer} gpuBuffer
+     * @param {T} outputArray
+     * @returns {Promise<T>}
+     */
     async readBuffer(gpuBuffer, outputArray) {
         // This buffer can be read on the CPU because of MAP_READ
         const readBuffer = this.device.createBuffer({
@@ -304,7 +316,8 @@ class Tutorial {
         await readBuffer.mapAsync(GPUMapMode.READ);
 
         // Read the data.
-        const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+        const ArrayType = /** @type {new (buffer: ArrayBufferLike) => T} */ (outputArray.constructor);
+        const resultData = new ArrayType(readBuffer.getMappedRange());
 
         // Copy the data to the output array
         outputArray.set(resultData);

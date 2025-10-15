@@ -37,11 +37,15 @@ class TreeStore {
      * @property {string} treeType // GATTUNG_ART
      * @property {number} yearPlanted // PFLANZJAHR
      * @property {number} treeNumber // BAUMNUMMER
-     * 
+     */
+    /**
      * @type {OtherData[]}
      */
     #otherData = [];
 
+    /**
+     * @param {number} numTrees 
+     */
     constructor(numTrees) {
         this.#numTrees = numTrees;
         this.#coordinatesLatLonBuffer = new Float32Array(numTrees * 2);
@@ -52,10 +56,16 @@ class TreeStore {
         return this.#numTrees;
     }
 
+    /**
+     * @param {number} index 
+     */
     getTreeProxy(index) {
         return new TreeProxy(this, index);
     }
 
+    /**
+     * @param {(treeProxy: TreeProxy)=>void} callback 
+     */
     forEachTree(callback) {
         for (let i = 0; i < this.#numTrees; ++i) {
             callback(new TreeProxy(this, i));
@@ -81,19 +91,27 @@ class TreeProxy {
     #treeStore;
     #index;
 
+    /**
+     * @param {TreeStore} treeStore 
+     * @param {number} index 
+     */
     constructor(treeStore, index) {
         this.#treeStore = treeStore;
         this.#index = index;
     }
 
     getLatitude() {
-        return this.#treeStore.getCoordinatesBuffer[this.#index * 2];
+        return this.#treeStore.getCoordinatesLatLonBuffer()[this.#index * 2];
     }
 
     /**
      * @deprecated
      * It's actually not deprecated :)
      * But needs testing. TODO
+     * 
+     * @param {number} mapLatitudeMin 
+     * @param {number} mapLatitudeMax 
+     * @param {number} mapWidth
      */
     getX(mapLatitudeMin, mapLatitudeMax, mapWidth) {
         return (this.getLatitude() - mapLatitudeMin) / (mapLatitudeMax - mapLatitudeMin) * mapWidth;
@@ -103,13 +121,17 @@ class TreeProxy {
      * @deprecated
      * It's actually not deprecated :)
      * But needs testing. TODO
+     * 
+     * @param {number} mapLongitudeMin 
+     * @param {number} mapLongitudeMax 
+     * @param {number} mapHeight
      */
     getY(mapLongitudeMin, mapLongitudeMax, mapHeight) {
         return (this.getLongitude() - mapLongitudeMin) / (mapLongitudeMax - mapLongitudeMin) * mapHeight;
     }
 
     getLongitude() {
-        return this.#treeStore.getCoordinatesBuffer()[this.#index * 2 + 1];
+        return this.#treeStore.getCoordinatesLatLonBuffer()[this.#index * 2 + 1];
     }
 
     getTotalHeightCategory() {
@@ -121,7 +143,7 @@ class TreeProxy {
     }
 
     getCrownDiameterCategory() {
-        return this.#treeStore.getInfoBuffer[this.#index * 4 + 1];
+        return this.#treeStore.getInfoBuffer()[this.#index * 4 + 1];
     }
 
     getCrownDiameterRange() {
@@ -138,7 +160,7 @@ class TreeProxy {
 
     /** @returns {number} The location ID (OBJEKT_ID, e.g. "576868130") */
     getLocationId() {
-        return this.#treeStore.getOtherData()[this.#index].objectId;
+        return this.#treeStore.getOtherData()[this.#index].locationId;
     }
 
     /** @returns {string} The location (OBJEKT_STRASSE, e.g. "Guglgasse") */
