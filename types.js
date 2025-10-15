@@ -9,9 +9,6 @@
  * @property {string} heatmapRender
  * @property {string} image
  * @property {string} markers
- * 
- * @global
- * @typedef {Window & typeof globalThis & { SHADERS: undefined | Shaders }} ExtendedWindow
  */
 
 /**
