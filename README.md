@@ -160,7 +160,6 @@ async initializePipelines() {
             module: this.device.createShaderModule({
                 code: SHADERS.add
             }),
-            entryPoint: "main" // Name of the entry point function in the shader
         }
     });
 }
@@ -352,7 +351,6 @@ async initializePipelines() {
         layout: "auto",
         compute: {
             module: this.device.createShaderModule({ code: SHADERS.aggregate }),
-            entryPoint: "main"
         }
     });
 }
@@ -525,12 +523,10 @@ async initializePipelines() {
         layout: "auto",
         vertex: {
             module: imageShaderModule,
-            entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
             module: imageShaderModule,
-            entryPoint: "fragment",
             targets: [
                 {
                     // Only one render target, where our color will be drawn
@@ -800,12 +796,10 @@ async initializePipelines() {
         layout: "auto",
         vertex: {
             module: markersShaderModule,
-            entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
             module: markersShaderModule,
-            entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat()
             }]
@@ -871,7 +865,6 @@ async initializePipelines() {
         ...
         fragment: {
             module: markersShaderModule,
-            entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
                 blend: { // This activates blending!
@@ -1304,12 +1297,10 @@ async initializePipelines() {
         layout: "auto",
         vertex: {
             module: markersShaderModule,
-            entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
             module: markersShaderModule,
-            entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
                 blend: {
