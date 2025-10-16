@@ -85,13 +85,13 @@ Then, we upload some data to the GPU. For now, a fixed `[1, 2, 3, 4]` array is g
 ```javascript
 async initializeBuffers() {
     this.data = new Float32Array([1, 2, 3, 4]);
-    this.buffer = this.device.createBuffer({ // Create GPU buffer
-        size: this.data.byteLength,
-        usage: GPUBufferUsage.STORAGE, // Storage buffers can be indexed directly on the GPU
-        mappedAtCreation: true, // Enables us to write to the buffer immediately
+    this.buffer = this.device.createBuffer({
+      size: this.data.byteLength,
+      // Storage buffers can be indexed directly on the GPU
+      usage:
+        GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
-    new Float32Array(this.buffer.getMappedRange()).set(this.data); // Write to the buffer
-    this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
+    this.device.queue.writeBuffer(this.buffer, 0, this.data);
 }
 ```
 
@@ -250,12 +250,7 @@ async readBuffer(gpuBuffer, outputArray) {
 }
 ```
 
-**Important!** In order for our buffer to be copied, it must contain the flag `GPUBufferUsage.COPY_SRC`. So now it will contain the following:
-
-// TODO: People were confused about where to paste this
-```javascript
-usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
-```
+**Important!** Our buffer can be copied, because it has the `GPUBufferUsage.COPY_SRC` flag.
 
 The last thing left to do is print our data on the console!
 
@@ -286,12 +281,9 @@ async initializeBuffers() {
     // TreeInfo
     this.gpuTreeInfo = this.device.createBuffer({
         size: this.trees.getInfoBuffer().byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        mappedAtCreation: true,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
     });
-    // Attention! Now it's a Uint32Array, not float :)
-    new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer()); // Write to the buffer
-    this.gpuTreeInfo.unmap(); // Unmap on the CPU so that the GPU can use it
+    this.device.queue.writeBuffer(this.gpuTreeInfo, 0, this.trees.getInfoBuffer());
 }
 ```
 
@@ -641,11 +633,9 @@ async initializeBuffers() {
     // TreeCoordinates
     this.gpuTreeCoodinates = this.device.createBuffer({
         size: this.trees.getCoordinatesLatLonBuffer().byteLength,
-        usage: GPUBufferUsage.STORAGE,
-        mappedAtCreation: true
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    new Float32Array(this.gpuTreeCoodinates.getMappedRange()).set(this.trees.getCoordinatesLatLonBuffer());
-    this.gpuTreeCoodinates.unmap();
+    this.device.queue.writeBuffer(this.gpuTreeCoodinates, 0, this.trees.getCoordinatesLatLonBuffer());
 }
 ```
 
