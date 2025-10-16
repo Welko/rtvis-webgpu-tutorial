@@ -35,8 +35,10 @@ First steps:
 
 Other resources:
 - [Tutorial slides](slides.pdf)
-- [WebGPU Working Draft](https://www.w3.org/TR/webgpu/)
-- [WebGPU Shading Language (WGSL) Working Draft](https://www.w3.org/TR/WGSL/)
+- [WebGPU Fundamentals](https://webgpufundamentals.org/)
+- [WebGPU Shading Language (WGSL) Tutorial](https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html)
+- [WebGPU Specification](https://www.w3.org/TR/webgpu/)
+- [WGSL Specification](https://www.w3.org/TR/WGSL/)
 
 ## Task 0 - Initialize WebGPU
 
