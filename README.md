@@ -58,8 +58,9 @@ async initializeWebGPU() {
 }
 ```
 
-// TODO: Tell people to open the browser Inspect/developer thingy
-// Not everybody knows that, I guess :)
+Now open your browser console and look at the message.
+- Chrome-based - `Ctrl + Shift + J`
+- Firefox - `Ctrl + Shift + K`
 
 ![Result of task 0: WebGPU is supported!](images/task0.png)
 
