@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "ESNext",
         "target": "ES2020",
-        "types": ["./types.js", "./lib/webgpu.d.ts"],
+        "types": ["./lib/webgpu.d.ts"],
         "checkJs": true,
         "noImplicitAny": true,
     },
