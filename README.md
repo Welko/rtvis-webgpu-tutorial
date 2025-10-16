@@ -31,6 +31,7 @@ First steps:
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
 - Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
 - Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
+- If you want a smoother workflow, we recommend using a [live server](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server)
 
 Other resources:
 - [Tutorial slides](slides.pdf)
