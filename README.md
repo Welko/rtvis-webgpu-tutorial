@@ -614,10 +614,6 @@ async render() {
 
 And, finally, you should see a map of Vienna on your screen.
 
-// TODO: People were confused here why the map looks so bad.
-// It's because of how sampling works... if we had mipmaps, for example, it would look better
-// At least, this image below should reflect that... it should also look "bad" :)
-
 <img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
 
 ## Task 4 - Render Trees as Markers
