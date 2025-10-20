@@ -375,14 +375,13 @@ Don't forget to also rename the pipeline and bind group we're using.
 
 ```javascript
 async render() {
-    const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
-
-    const computePass = commandEncoder.beginComputePass();
-    computePass.setPipeline(this.aggregatePipeline);
-    computePass.setBindGroup(0, this.aggregateBindGroup);
-    computePass.dispatchWorkgroups(numTreeWorkgroups);
-    computePass.end();
-
+    ...
+        const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(this.aggregatePipeline);
+        computePass.setBindGroup(0, this.aggregateBindGroup);
+        computePass.dispatchWorkgroups(numTreeWorkgroups);
+        computePass.end();
     ...
 }
 ```
@@ -972,7 +971,15 @@ struct Grid {
 }
 
 struct Uniforms {
-    ...
+    mapWidth: f32,
+    mapHeight: f32,
+    mapLatitudeMin: f32,
+    mapLatitudeMax: f32,
+    mapLongitudeMin: f32,
+    mapLongitudeMax: f32,
+    markerSize: f32,
+    unused: f32, // Padding
+    markerColor: vec4f,
     gridWidth: f32, // Number of cells on the grid's width
     gridHeight: f32, // Number of cells on the grid's height
 };
@@ -1300,14 +1307,14 @@ With the shader created, we go back to Javascript and introduce our new **pipeli
 async initializePipelines() {
     ...
     const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
-    this.markersRenderPipeline = this.device.createRenderPipeline({
+    this.heatmapRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
-            module: markersShaderModule,
+            module: heatmapRenderShaderModule,
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
-            module: markersShaderModule,
+            module: heatmapRenderShaderModule,
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
                 blend: {
@@ -1344,6 +1351,7 @@ Now we render the heatmap to see if we did everything right so far.
             ...
         }
         {
+            // Render Pass
             const renderPass = commandEncoder.beginRenderPass({
                 colorAttachments: [this.colorAttachment]
             });
@@ -1390,7 +1398,7 @@ async initializeBindGroups() {
 
 Open `shaders/heatmapRender.js`.
 
-Remove the dummy function and instead calculate a color value based on the tree count.
+Remove the `// Dummy value for now` section and instead calculate a color value based on the tree count.
 
 ```wgsl
 // Map color based on tree count
