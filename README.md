@@ -2,7 +2,8 @@
 
 # Real Time Visualization WebGPU Tutorial
 
-by Lucas Melo and Lukas Herzberger
+by Lucas Melo, Lukas Herzberger, Patrick Komon
+
 
 - [Real Time Visualization WebGPU Tutorial](#real-time-visualization-webgpu-tutorial)
   - [Introduction](#introduction)
@@ -20,20 +21,24 @@ by Lucas Melo and Lukas Herzberger
 This is a 90 minute tutorial. It consists of 4 tasks and 1 bonus task. By the end of it, you will have built your own neat little app to visualize the trees of Vienna.
 
 WebGPU-capable browsers:
-- Windows/Mac: Edge or Chrome
-- Linux: Chromium
+- Windows: Firefox, Chrome, Edge
+- Linux: Firefox Nightly or Chromium
   - Install from here: [https://github.com/scheib/chromium-latest-linux](https://github.com/scheib/chromium-latest-linux)
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
+- MacOS: Chrome or Safari (macOS Tahoe 26 or later)
 
 First steps:
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
 - Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
 - Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
+- If you want a smoother workflow, we recommend using a [live server](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server)
 
 Other resources:
 - [Tutorial slides](slides.pdf)
-- [WebGPU Working Draft](https://www.w3.org/TR/webgpu/)
-- [WebGPU Shading Language (WGSL) Working Draft](https://www.w3.org/TR/WGSL/)
+- [WebGPU Fundamentals](https://webgpufundamentals.org/)
+- [WebGPU Shading Language (WGSL) Tutorial](https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html)
+- [WebGPU Specification](https://www.w3.org/TR/webgpu/)
+- [WGSL Specification](https://www.w3.org/TR/WGSL/)
 
 ## Task 0 - Initialize WebGPU
 
@@ -52,6 +57,10 @@ async initializeWebGPU() {
     }
 }
 ```
+
+Now open your browser console and look at the message.
+- Chrome-based - `Ctrl + Shift + J`
+- Firefox - `Ctrl + Shift + K`
 
 ![Result of task 0: WebGPU is supported!](images/task0.png)
 
@@ -75,14 +84,13 @@ Then, we upload some data to the GPU. For now, a fixed `[1, 2, 3, 4]` array is g
 
 ```javascript
 async initializeBuffers() {
-    this.data = new Float32Array([1, 2, 3, 4]);
-    this.buffer = this.device.createBuffer({ // Create GPU buffer
-        size: this.data.byteLength,
-        usage: GPUBufferUsage.STORAGE, // Storage buffers can be indexed directly on the GPU
-        mappedAtCreation: true, // Enables us to write to the buffer immediately
+    this.data = new Uint32Array([1, 2, 3, 4]);
+    this.buffer = this.device.createBuffer({
+      size: this.data.byteLength,
+      // Storage buffers can be indexed directly on the GPU
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
-    new Float32Array(this.buffer.getMappedRange()).set(this.data); // Write to the buffer
-    this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
+    this.device.queue.writeBuffer(this.buffer, 0, this.data);
 }
 ```
 
@@ -96,7 +104,7 @@ The first thing we'll add here is the **buffer binding**.
 
 ```wgsl
 // At binding 0, we have a read-write storage buffer
-@group(0) @binding(0) var<storage, read_write> data: array<f32>; // Array of 32-bit floats
+@group(0) @binding(0) var<storage, read_write> data: array<u32>; // Array of 32-bit unsigned integers
 ```
 
 Then we add our **compute entry point**.
@@ -127,7 +135,7 @@ if (globalId.x >= arrayLength(&data)) {
 Finally, we can use the thread ID to do something with the data. In this case, we just add a hard-coded value. The entire shader should then look like this:
 
 ```wgsl
-@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+@group(0) @binding(0) var<storage, read_write> data: array<u32>;
 
 @compute
 @workgroup_size(64)
@@ -135,7 +143,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3u) {
     if (globalId.x >= arrayLength(&data)) {
         return;
     }
-    data[globalId.x] += 100;
+    data[globalId.x] += 100u;
 }
 ```
 
@@ -144,12 +152,13 @@ Now that our shader is done, we move back to `tutorial.js` and define the GPU pi
 ```javascript
 async initializePipelines() {
     this.pipeline = this.device.createComputePipeline({
-        layout: "auto", // Bad practice. Good enough for a tutorial though
+        // Use simplistic auto-generation
+        // Bigger applications will manually generate a layout, and share it across muliple shaders
+        layout: "auto", 
         compute: {
             module: this.device.createShaderModule({
                 code: SHADERS.add
             }),
-            entryPoint: "main" // Name of the entry point function in the shader
         }
     });
 }
@@ -162,9 +171,9 @@ We create this connection via a **bind group** (a group of bindings).
 ```javascript
 async initializeBindGroups() {
     this.bindGroup = this.device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0), // Ideally created manually, but this is good enough for a tutorial
+        layout: this.pipeline.getBindGroupLayout(0), // group(0)
         entries: [
-            { // Entry 0
+            {
                 binding: 0, // Matches our shader!
                 resource: {
                     buffer: this.buffer // Our data!
@@ -178,7 +187,7 @@ async initializeBindGroups() {
 There is one last thing left before executing our pipeline. The pipeline with its bind group is executed through a GPU **command**. Commands in WebGPU are encoded in batch, so that they can all be sent to the GPU at once. That is done via a **command encoder**.
 
 ```javascript
-render() {
+async render() {
     const commandEncoder = this.device.createCommandEncoder();
     {
         const computePass = commandEncoder.beginComputePass();
@@ -194,7 +203,7 @@ render() {
 With our command buffer created, we can finally submit it to the GPU, and our shader code will be executed!
 
 ```javascript
-render() {
+async render() {
     ...
     this.device.queue.submit([commandBuffer]);
 }
@@ -237,18 +246,14 @@ async readBuffer(gpuBuffer, outputArray) {
 }
 ```
 
-**Important!** In order for our buffer to be copied, it must contain the flag `GPUBufferUsage.COPY_SRC`. So now it will contain the following:
-
-```javascript
-usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC`
-```
+**Important!** Our buffer can be copied, because it has the `GPUBufferUsage.COPY_SRC` flag.
 
 The last thing left to do is print our data on the console!
 
 ```javascript
 async render() {
     ...
-    console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
+    console.log(await this.readBuffer(this.buffer, new Uint32Array(this.data.length)));
 }
 ```
 
@@ -272,18 +277,21 @@ async initializeBuffers() {
     // TreeInfo
     this.gpuTreeInfo = this.device.createBuffer({
         size: this.trees.getInfoBuffer().byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        mappedAtCreation: true,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
     });
-    // Attention! Now it's a Uint32Array, not float :)
-    new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer()); // Write to the buffer
-    this.gpuTreeInfo.unmap(); // Unmap on the CPU so that the GPU can use it
+    this.device.queue.writeBuffer(this.gpuTreeInfo, 0, this.trees.getInfoBuffer());
 }
 ```
 
-Now we have replaced our `data` array with `trees.getInfoBuffer()` and renamed our `buffer` to `gpuTreeInfo`. This change also needs to be reflected in our `render` function:
+Now we have replaced our `data` array with `trees.getInfoBuffer()` and renamed our `buffer` to `gpuTreeInfo`. This change also needs to be reflected in our `initializeBindGroups`and `render` functions:
 
 ```javascript
+async initializeBindGroups() {
+    ...
+                    buffer: this.gpuTreeInfo // Our new tree data!
+    ...
+}
+...
 async render() {
     ...
     console.log(await this.readBuffer(this.gpuTreeInfo, new Uint32Array(this.trees.getInfoBuffer().length)));
@@ -342,7 +350,6 @@ async initializePipelines() {
         layout: "auto",
         compute: {
             module: this.device.createShaderModule({ code: SHADERS.aggregate }),
-            entryPoint: "main"
         }
     });
 }
@@ -364,19 +371,25 @@ Almost done. Now we adjust the number of workgroups we're dispatching. Instead o
 Don't forget to also rename the pipeline and bind group we're using.
 
 ```javascript
-const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
-
-const computePass = commandEncoder.beginComputePass();
-computePass.setPipeline(this.aggregatePipeline);
-computePass.setBindGroup(0, this.aggregateBindGroup);
-computePass.dispatchWorkgroups(numTreeWorkgroups);
-computePass.end();
+async render() {
+    ...
+        const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
+        const computePass = commandEncoder.beginComputePass();
+        computePass.setPipeline(this.aggregatePipeline);
+        computePass.setBindGroup(0, this.aggregateBindGroup);
+        computePass.dispatchWorkgroups(numTreeWorkgroups);
+        computePass.end();
+    ...
+}
 ```
 
 Finally, we can now print the contents of the aggregates buffer.
 
 ```javascript
-console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
+async render() {
+    ...
+    console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
+}
 ```
 
 You should now see displayed on the console the number of trees counted per district (note that we start at index 0). In the image below, district 9 has 30 trees, district 10 has 0, district 11 has 7, etc.
@@ -429,6 +442,16 @@ async initializeTextures() {
         magFilter: 'linear',
         minFilter: 'linear'
     });
+}
+```
+
+Finally, we need to set the render size of the canvas to our image dimensions. This avoids sampling artifacts on the map and lets the browser do the work of downsampling our render output to the actual canvas (css) size.
+```javascript
+async initializeTextures() {
+    ...
+    // Set canvas render size to image dimension
+    this.canvas.width = image.width;
+    this.canvas.height = image.height;
 }
 ```
 
@@ -503,12 +526,10 @@ async initializePipelines() {
         layout: "auto",
         vertex: {
             module: imageShaderModule,
-            entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
             module: imageShaderModule,
-            entryPoint: "fragment",
             targets: [
                 {
                     // Only one render target, where our color will be drawn
@@ -538,10 +559,10 @@ And lastly, the color attachment:
 
 ```javascript
 async initializeAttachments() {
-    // Calculate size of our image and set it to the canvas
+    // Set canvas css size
     const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
-    this.canvas.width = minSide;
-    this.canvas.height = minSide;
+    this.canvas.style.width = minSide + "px";
+    this.canvas.style.height = minSide + "px";
 
     // Color attachment to draw to
     this.colorAttachment = {
@@ -607,11 +628,9 @@ async initializeBuffers() {
     // TreeCoordinates
     this.gpuTreeCoodinates = this.device.createBuffer({
         size: this.trees.getCoordinatesLatLonBuffer().byteLength,
-        usage: GPUBufferUsage.STORAGE,
-        mappedAtCreation: true
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    new Float32Array(this.gpuTreeCoodinates.getMappedRange()).set(this.trees.getCoordinatesLatLonBuffer());
-    this.gpuTreeCoodinates.unmap();
+    this.device.queue.writeBuffer(this.gpuTreeCoodinates, 0, this.trees.getCoordinatesLatLonBuffer());
 }
 ```
 
@@ -776,12 +795,10 @@ async initializePipelines() {
         layout: "auto",
         vertex: {
             module: markersShaderModule,
-            entryPoint: "vertex",
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
             module: markersShaderModule,
-            entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat()
             }]
@@ -847,7 +864,6 @@ async initializePipelines() {
         ...
         fragment: {
             module: markersShaderModule,
-            entryPoint: "fragment",
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
                 blend: { // This activates blending!
@@ -948,7 +964,15 @@ struct Grid {
 }
 
 struct Uniforms {
-    ...
+    mapWidth: f32,
+    mapHeight: f32,
+    mapLatitudeMin: f32,
+    mapLatitudeMax: f32,
+    mapLongitudeMin: f32,
+    mapLongitudeMax: f32,
+    markerSize: f32,
+    unused: f32, // Padding
+    markerColor: vec4f,
     gridWidth: f32, // Number of cells on the grid's width
     gridHeight: f32, // Number of cells on the grid's height
 };
@@ -1276,16 +1300,14 @@ With the shader created, we go back to Javascript and introduce our new **pipeli
 async initializePipelines() {
     ...
     const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
-    this.markersRenderPipeline = this.device.createRenderPipeline({
+    this.heatmapRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
-            module: markersShaderModule,
-            entryPoint: "vertex",
+            module: heatmapRenderShaderModule,
             // buffers: We don't need any vertex buffer :)
         },
         fragment: {
-            module: markersShaderModule,
-            entryPoint: "fragment",
+            module: heatmapRenderShaderModule,
             targets: [{
                 format: this.gpu.getPreferredCanvasFormat(),
                 blend: {
@@ -1322,6 +1344,7 @@ Now we render the heatmap to see if we did everything right so far.
             ...
         }
         {
+            // Render Pass
             const renderPass = commandEncoder.beginRenderPass({
                 colorAttachments: [this.colorAttachment]
             });
@@ -1368,7 +1391,7 @@ async initializeBindGroups() {
 
 Open `shaders/heatmapRender.js`.
 
-Remove the dummy function and instead calculate a color value based on the tree count.
+Remove the `// Dummy value for now` section and instead calculate a color value based on the tree count.
 
 ```wgsl
 // Map color based on tree count
