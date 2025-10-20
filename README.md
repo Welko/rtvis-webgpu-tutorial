@@ -84,7 +84,7 @@ Then, we upload some data to the GPU. For now, a fixed `[1, 2, 3, 4]` array is g
 
 ```javascript
 async initializeBuffers() {
-    this.data = new Float32Array([1, 2, 3, 4]);
+    this.data = new Uint32Array([1, 2, 3, 4]);
     this.buffer = this.device.createBuffer({
       size: this.data.byteLength,
       // Storage buffers can be indexed directly on the GPU
@@ -105,7 +105,7 @@ The first thing we'll add here is the **buffer binding**.
 
 ```wgsl
 // At binding 0, we have a read-write storage buffer
-@group(0) @binding(0) var<storage, read_write> data: array<f32>; // Array of 32-bit floats
+@group(0) @binding(0) var<storage, read_write> data: array<u32>; // Array of 32-bit unsigned integers
 ```
 
 Then we add our **compute entry point**.
@@ -136,7 +136,7 @@ if (globalId.x >= arrayLength(&data)) {
 Finally, we can use the thread ID to do something with the data. In this case, we just add a hard-coded value. The entire shader should then look like this:
 
 ```wgsl
-@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+@group(0) @binding(0) var<storage, read_write> data: array<u32>;
 
 @compute
 @workgroup_size(64)
@@ -144,7 +144,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3u) {
     if (globalId.x >= arrayLength(&data)) {
         return;
     }
-    data[globalId.x] += 100;
+    data[globalId.x] += 100u;
 }
 ```
 
@@ -204,7 +204,7 @@ render() {
 With our command buffer created, we can finally submit it to the GPU, and our shader code will be executed!
 
 ```javascript
-render() {
+async render() {
     ...
     this.device.queue.submit([commandBuffer]);
 }
@@ -256,7 +256,7 @@ The last thing left to do is print our data on the console!
 ```javascript
 async render() {
     ...
-    console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
+    console.log(await this.readBuffer(this.buffer, new Uint32Array(this.data.length)));
 }
 ```
 
@@ -286,9 +286,15 @@ async initializeBuffers() {
 }
 ```
 
-Now we have replaced our `data` array with `trees.getInfoBuffer()` and renamed our `buffer` to `gpuTreeInfo`. This change also needs to be reflected in our `render` function:
+Now we have replaced our `data` array with `trees.getInfoBuffer()` and renamed our `buffer` to `gpuTreeInfo`. This change also needs to be reflected in our `initializeBindGroups`and `render` functions:
 
 ```javascript
+async initializeBindGroups() {
+    ...
+                    buffer: this.gpuTreeInfo // Our new tree data!
+    ...
+}
+...
 async render() {
     ...
     console.log(await this.readBuffer(this.gpuTreeInfo, new Uint32Array(this.trees.getInfoBuffer().length)));
@@ -296,10 +302,6 @@ async render() {
 ```
 
 If we now refresh the page, you'll notice that the first 64 values of our buffer are at least 100, as expected.
-// TODO: No :)
-// Uncaught (in promise) TypeError: GPUDevice.createBindGroup: Missing required 'buffer' member of GPUBufferBinding.
-// initializeBindGroups() needs to be changed as well
-// Even when that's fixed, the first 64 elements contain "1120403456"... why? :)
 
 Now we do something more interesting than that. Let us count the number of trees for each district in Vienna. For that, we write a new shader.
 
@@ -371,22 +373,27 @@ Almost done. Now we adjust the number of workgroups we're dispatching. Instead o
 
 Don't forget to also rename the pipeline and bind group we're using.
 
-// TODO: Where to paste this? -> render()
 ```javascript
-const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
+async render() {
+    const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
 
-const computePass = commandEncoder.beginComputePass();
-computePass.setPipeline(this.aggregatePipeline);
-computePass.setBindGroup(0, this.aggregateBindGroup);
-computePass.dispatchWorkgroups(numTreeWorkgroups);
-computePass.end();
+    const computePass = commandEncoder.beginComputePass();
+    computePass.setPipeline(this.aggregatePipeline);
+    computePass.setBindGroup(0, this.aggregateBindGroup);
+    computePass.dispatchWorkgroups(numTreeWorkgroups);
+    computePass.end();
+
+    ...
+}
 ```
 
 Finally, we can now print the contents of the aggregates buffer.
 
-// TODO: Also in render()
 ```javascript
-console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
+async render() {
+    ...
+    console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
+}
 ```
 
 You should now see displayed on the console the number of trees counted per district (note that we start at index 0). In the image below, district 9 has 30 trees, district 10 has 0, district 11 has 7, etc.
