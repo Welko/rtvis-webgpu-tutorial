@@ -218,8 +218,6 @@ The solution: We must create a separate buffer to copy our data into.
 
 In this part, we skip the details and encourage you to understand it in more detail on your own at another time.
 
-// TODO: Maybe include this function in the code already, instead of people needing to copy-paste it?
-
 ```javascript
 async readBuffer(gpuBuffer, outputArray) {
     // This buffer can be read on the CPU because of MAP_READ
