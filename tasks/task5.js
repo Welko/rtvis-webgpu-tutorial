@@ -118,6 +118,10 @@ class Tutorial {
             magFilter: 'linear',
             minFilter: 'linear'
         });
+
+        // Set canvas render size to image dimension
+        this.canvas.width = image.width;
+        this.canvas.height = image.height;
     }
 
     async initializeLayouts() {
@@ -266,10 +270,10 @@ class Tutorial {
     }
 
     async initializeAttachments() {
-        // Calculate size of our image and set it to the canvas
+        // Set canvas css size
         const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
-        this.canvas.width = minSide;
-        this.canvas.height = minSide;
+        this.canvas.style.width = minSide + "px";
+        this.canvas.style.height = minSide + "px";
 
         // Color attachment to draw to
         /** @type {GPURenderPassColorAttachment} */
