@@ -560,11 +560,12 @@ And lastly, the color attachment:
 ```javascript
 async initializeAttachments() {
     // Set canvas css size
-    const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
+    const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
     this.canvas.style.width = minSide + "px";
     this.canvas.style.height = minSide + "px";
 
     // Color attachment to draw to
+    /** @type {GPURenderPassColorAttachment} */
     this.colorAttachment = {
         view: null, // Will be set in render(), i.e., every frame
         loadOp: "clear",
