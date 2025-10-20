@@ -12,6 +12,10 @@ class Tutorial {
         await this.render();
     }
 
+    /**
+     * @param {any} gui 
+     * @param {HTMLCanvasElement} canvas 
+     */
     constructor(gui, canvas) {
         this.gui = gui;
         this.canvas = canvas;
@@ -30,6 +34,7 @@ class Tutorial {
             }
             console.log("Hooray! WebGPU is supported in your browser!");
         }
+        
         this.adapter = await this.gpu.requestAdapter();
         this.device = await this.adapter.requestDevice();
     }
@@ -40,14 +45,10 @@ class Tutorial {
         // TreeInfo
         this.gpuTreeInfo = this.device.createBuffer({
             size: this.trees.getInfoBuffer().byteLength,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
         });
-        // Attention! Now it's a Uint32Array, not float :)
-        new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer());
-        this.gpuTreeInfo.unmap();
-
-        // AggregatedValues
+        this.device.queue.writeBuffer(this.gpuTreeInfo, 0, this.trees.getInfoBuffer());
+        
         this.gpuAggregatedValues = this.device.createBuffer({
             size: 23 * Uint32Array.BYTES_PER_ELEMENT, // 23 unsigned integers (one per district in Vienna)
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
@@ -67,7 +68,6 @@ class Tutorial {
             layout: "auto",
             compute: {
                 module: this.device.createShaderModule({ code: SHADERS.aggregate }),
-                entryPoint: "main"
             }
         });
     }
@@ -91,6 +91,12 @@ class Tutorial {
 
     }
 
+    /**
+     * @template {Float32Array | Uint32Array | Int32Array} T
+     * @param {GPUBuffer} gpuBuffer
+     * @param {T} outputArray
+     * @returns {Promise<T>}
+     */
     async readBuffer(gpuBuffer, outputArray) {
         // This buffer can be read on the CPU because of MAP_READ
         const readBuffer = this.device.createBuffer({
@@ -98,7 +104,7 @@ class Tutorial {
             usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
         });
 
-        // Copy from 'buffer' to 'readBuffer'
+        // Copy from 'gpuBuffer' to 'readBuffer'
         const commandEncoder = this.device.createCommandEncoder();
         commandEncoder.copyBufferToBuffer(gpuBuffer, 0, readBuffer, 0, outputArray.byteLength);
         this.device.queue.submit([commandEncoder.finish()]);
@@ -106,8 +112,9 @@ class Tutorial {
         // Map the GPU data to the CPU
         await readBuffer.mapAsync(GPUMapMode.READ);
 
-        // Read the data.
-        const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+        // Read the data
+        const ArrayType = /** @type {new (buffer: ArrayBufferLike) => T} */ (outputArray.constructor);
+        const resultData = new ArrayType(readBuffer.getMappedRange());
 
         // Copy the data to the output array
         outputArray.set(resultData);
@@ -122,7 +129,6 @@ class Tutorial {
         const commandEncoder = this.device.createCommandEncoder();
         {
             const numTreeWorkgroups = Math.ceil(this.trees.getNumTrees() / 64); // 64 from shader
-
             const computePass = commandEncoder.beginComputePass();
             computePass.setPipeline(this.aggregatePipeline);
             computePass.setBindGroup(0, this.aggregateBindGroup);
@@ -130,7 +136,9 @@ class Tutorial {
             computePass.end();
         }
         const commandBuffer = commandEncoder.finish();
+        
         this.device.queue.submit([commandBuffer]);
+        
         console.log(await this.readBuffer(this.gpuAggregatedValues, new Uint32Array(23)));
     }
 
