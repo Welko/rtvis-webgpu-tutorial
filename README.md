@@ -188,7 +188,7 @@ async initializeBindGroups() {
 There is one last thing left before executing our pipeline. The pipeline with its bind group is executed through a GPU **command**. Commands in WebGPU are encoded in batch, so that they can all be sent to the GPU at once. That is done via a **command encoder**.
 
 ```javascript
-render() {
+async render() {
     const commandEncoder = this.device.createCommandEncoder();
     {
         const computePass = commandEncoder.beginComputePass();

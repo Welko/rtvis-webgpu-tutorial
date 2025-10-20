@@ -15,4 +15,6 @@ fn xyToCellIndex(xy: vec2f) -> u32 {
     return y * u32(u.gridWidth) + x;
 }
 
+// Your code here :)
+
 `});
