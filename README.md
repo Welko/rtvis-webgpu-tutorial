@@ -88,8 +88,7 @@ async initializeBuffers() {
     this.buffer = this.device.createBuffer({
       size: this.data.byteLength,
       // Storage buffers can be indexed directly on the GPU
-      usage:
-        GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.buffer, 0, this.data);
 }
