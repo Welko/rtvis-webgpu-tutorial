@@ -88,8 +88,7 @@ async initializeBuffers() {
     this.buffer = this.device.createBuffer({
       size: this.data.byteLength,
       // Storage buffers can be indexed directly on the GPU
-      usage:
-        GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     });
     this.device.queue.writeBuffer(this.buffer, 0, this.data);
 }
@@ -217,8 +216,6 @@ However, we cannot read directly from our buffer. Our buffer was created with `u
 The solution: We must create a separate buffer to copy our data into.
 
 In this part, we skip the details and encourage you to understand it in more detail on your own at another time.
-
-// TODO: Maybe include this function in the code already, instead of people needing to copy-paste it?
 
 ```javascript
 async readBuffer(gpuBuffer, outputArray) {
@@ -612,10 +609,6 @@ async render() {
 ```
 
 And, finally, you should see a map of Vienna on your screen.
-
-// TODO: People were confused here why the map looks so bad.
-// It's because of how sampling works... if we had mipmaps, for example, it would look better
-// At least, this image below should reflect that... it should also look "bad" :)
 
 <img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
 
