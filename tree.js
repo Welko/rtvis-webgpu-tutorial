@@ -6,7 +6,7 @@ class TreeStore {
     #numTrees;
 
     /**
-     * @type {Float32Array}
+     * @type {Float32Array<ArrayBuffer>}
      * Layout: [
      *          lat0, lon0,
      *          lat1, lon1,
@@ -16,7 +16,7 @@ class TreeStore {
     #coordinatesLatLonBuffer; 
 
     /**
-     * @type {Uint32Array}
+     * @type {Uint32Array<ArrayBuffer>}
      * Layout: [
      *          treeHeightCategory0, crownDiameterCategory0, districtNumber0, circumferenceAt1mInCm0,
      *          treeHeightCategory1, crownDiameterCategory1, districtNumber0, circumferenceAt1mInCm1,
