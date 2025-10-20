@@ -12,6 +12,10 @@ class Tutorial {
         await this.render();
     }
 
+    /**
+     * @param {any} gui 
+     * @param {HTMLCanvasElement} canvas 
+     */
     constructor(gui, canvas) {
         this.gui = gui;
         this.canvas = canvas;
@@ -30,9 +34,10 @@ class Tutorial {
             }
             console.log("Hooray! WebGPU is supported in your browser!");
         }
+        
         this.adapter = await this.gpu.requestAdapter();
         this.device = await this.adapter.requestDevice();
-
+        
         this.context = this.canvas.getContext("webgpu");
         this.context.configure({
             device: this.device,
@@ -46,21 +51,22 @@ class Tutorial {
         // TreeInfo
         this.gpuTreeInfo = this.device.createBuffer({
             size: this.trees.getInfoBuffer().byteLength,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
         });
-        new Uint32Array(this.gpuTreeInfo.getMappedRange()).set(this.trees.getInfoBuffer());
-        this.gpuTreeInfo.unmap();
-
+        this.device.queue.writeBuffer(this.gpuTreeInfo, 0, this.trees.getInfoBuffer());
+        
+        this.gpuAggregatedValues = this.device.createBuffer({
+            size: 23 * Uint32Array.BYTES_PER_ELEMENT, // 23 unsigned integers (one per district in Vienna)
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+        });
+        
         // TreeCoordinates
         this.gpuTreeCoodinates = this.device.createBuffer({
             size: this.trees.getCoordinatesLatLonBuffer().byteLength,
-            usage: GPUBufferUsage.STORAGE,
-            mappedAtCreation: true
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        new Float32Array(this.gpuTreeCoodinates.getMappedRange()).set(this.trees.getCoordinatesLatLonBuffer());
-        this.gpuTreeCoodinates.unmap();
-
+        this.device.queue.writeBuffer(this.gpuTreeCoodinates, 0, this.trees.getCoordinatesLatLonBuffer());
+        
         // Uniforms
         this.uniforms = {
             markerSize: 0.01,
@@ -98,23 +104,23 @@ class Tutorial {
 
         const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
         this.gpuMapTexture = this.device.createTexture({
-            size: [image.width, image.height],
-            format: "rgba8unorm",
-            // TEXTURE_BINDING is needed to bind the texture to the pipeline
-            // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
-            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+        size: [image.width, image.height],
+        format: "rgba8unorm",
+        // TEXTURE_BINDING is needed to bind the texture to the pipeline
+        // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
         });
         this.device.queue.copyExternalImageToTexture(
             {source: image, flipY: true}, // Source
             {texture: this.gpuMapTexture}, // Destination
             [image.width, image.height] // Size
         );
-
+        
         this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear'
         });
-
+        
         // Set canvas render size to image dimension
         this.canvas.width = image.width;
         this.canvas.height = image.height;
@@ -144,12 +150,10 @@ class Tutorial {
             layout: "auto",
             vertex: {
                 module: imageShaderModule,
-                entryPoint: "vertex",
                 // buffers: We don't need any vertex buffer :)
             },
             fragment: {
                 module: imageShaderModule,
-                entryPoint: "fragment",
                 targets: [
                     {
                         // Only one render target, where our color will be drawn
@@ -164,18 +168,12 @@ class Tutorial {
             layout: "auto",
             vertex: {
                 module: markersShaderModule,
-                entryPoint: "vertex",
                 // buffers: We don't need any vertex buffer :)
             },
             fragment: {
                 module: markersShaderModule,
-                entryPoint: "fragment",
                 targets: [{
-                    format: this.gpu.getPreferredCanvasFormat(),
-                    blend: {
-                        color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
-                        alpha: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" }
-                    }
+                    format: this.gpu.getPreferredCanvasFormat()
                 }]
             }
         });
@@ -184,7 +182,7 @@ class Tutorial {
             layout: this.heatmapComputePipelineLayout,
             compute: {
                 module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
-                entryPoint: null // Set for each pipeline
+                entryPoint: "" // Set below for each pipeline
             }
         };
         pipelineDescriptor.compute.entryPoint = "clear";
@@ -199,29 +197,17 @@ class Tutorial {
             layout: "auto",
             vertex: {
                 module: heatmapRenderShaderModule,
-                entryPoint: "vertex",
                 // buffers: We don't need any vertex buffer :)
             },
             fragment: {
                 module: heatmapRenderShaderModule,
-                entryPoint: "fragment",
-                targets: [
-                    {
-                        format: this.gpu.getPreferredCanvasFormat(),
-                        blend: {
-                            color: {
-                                operation: "add",
-                                srcFactor: "src-alpha",
-                                dstFactor: "one-minus-src-alpha",
-                            },
-                            alpha: {
-                                operation: "add",
-                                srcFactor: "src-alpha",
-                                dstFactor: "one-minus-src-alpha",
-                            }
-                        }
+                targets: [{
+                    format: this.gpu.getPreferredCanvasFormat(),
+                    blend: {
+                        color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+                        alpha: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" }
                     }
-                ]
+                }]
             }
         });
     }
@@ -258,6 +244,16 @@ class Tutorial {
         this.heatmapRenderBindGroup = this.device.createBindGroup({
             layout: this.heatmapRenderPipeline.getBindGroupLayout(0),
             entries: [
+                // We need to hide these for now until we use them in the shader (optimized out)
+                //{ binding: 0, resource: { buffer: this.gpuGridCells } },
+                //{ binding: 1, resource: { buffer: this.gpuGrid } },
+                { binding: 2, resource: { buffer: this.gpuUniforms } },
+            ]
+        });
+
+        this.heatmapRenderBindGroup = this.device.createBindGroup({
+            layout: this.heatmapRenderPipeline.getBindGroupLayout(0),
+            entries: [
                 { binding: 0, resource: { buffer: this.gpuGridCells } },
                 { binding: 1, resource: { buffer: this.gpuGrid } },
                 { binding: 2, resource: { buffer: this.gpuUniforms } },
@@ -267,11 +263,12 @@ class Tutorial {
 
     async initializeAttachments() {
         // Set canvas css size
-        const minSide = -100 + Math.min(this.canvas.parentNode.clientWidth, this.canvas.parentNode.clientHeight);
+        const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
         this.canvas.style.width = minSide + "px";
         this.canvas.style.height = minSide + "px";
 
         // Color attachment to draw to
+        /** @type {GPURenderPassColorAttachment} */
         this.colorAttachment = {
             view: null, // Will be set in render(), i.e., every frame
             loadOp: "clear",
@@ -281,17 +278,15 @@ class Tutorial {
     }
 
     async initializeGUI() {
-        const onChange = () => this.render();
-        [
-            this.gui.add(this.uniforms, "markerSize", 0.001, 0.1, 0.001),
-            this.gui.addColor(this.uniforms, "markerColor"),
-            this.gui.add(this.uniforms, "markerAlpha", 0.01, 1, 0.01),
-            this.gui.add(this.uniforms, "gridWidth", 1, this.GRID_MAX_WIDTH, 1),
-            this.gui.add(this.uniforms, "gridHeight", 1, this.GRID_MAX_HEIGHT, 1),
-        ]
-        .forEach((controller) => controller.onChange(onChange));
+
     }
 
+    /**
+     * @template {Float32Array | Uint32Array | Int32Array} T
+     * @param {GPUBuffer} gpuBuffer
+     * @param {T} outputArray
+     * @returns {Promise<T>}
+     */
     async readBuffer(gpuBuffer, outputArray) {
         // This buffer can be read on the CPU because of MAP_READ
         const readBuffer = this.device.createBuffer({
@@ -299,7 +294,7 @@ class Tutorial {
             usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
         });
 
-        // Copy from 'buffer' to 'readBuffer'
+        // Copy from 'gpuBuffer' to 'readBuffer'
         const commandEncoder = this.device.createCommandEncoder();
         commandEncoder.copyBufferToBuffer(gpuBuffer, 0, readBuffer, 0, outputArray.byteLength);
         this.device.queue.submit([commandEncoder.finish()]);
@@ -307,8 +302,9 @@ class Tutorial {
         // Map the GPU data to the CPU
         await readBuffer.mapAsync(GPUMapMode.READ);
 
-        // Read the data.
-        const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+        // Read the data
+        const ArrayType = /** @type {new (buffer: ArrayBufferLike) => T} */ (outputArray.constructor);
+        const resultData = new ArrayType(readBuffer.getMappedRange());
 
         // Copy the data to the output array
         outputArray.set(resultData);
@@ -343,10 +339,12 @@ class Tutorial {
 
         const commandEncoder = this.device.createCommandEncoder();
         {
+            // Compute pass
+            const computePass = commandEncoder.beginComputePass();
+            
+            // Calculate number of workgroups to dispatch
             const numWorkgroupsTrees = Math.ceil(this.trees.getNumTrees() / 64);
             const numWorkgroupCells = Math.ceil(this.uniforms.gridWidth * this.uniforms.gridHeight / 64);
-
-            const computePass = commandEncoder.beginComputePass();
 
             // Set one bindgroup for all three pipelines
             computePass.setBindGroup(0, this.heatmapComputeBindGroup);
@@ -366,6 +364,7 @@ class Tutorial {
             computePass.end();
         }
         {
+            // Render Pass
             const renderPass = commandEncoder.beginRenderPass({
                 colorAttachments: [this.colorAttachment]
             });
@@ -375,7 +374,7 @@ class Tutorial {
             renderPass.setBindGroup(0, this.imageBindGroup);
             renderPass.draw(6); // One quad
 
-            // Render markers
+            // Render markers (deactivated)
             //renderPass.setPipeline(this.markersRenderPipeline);
             //renderPass.setBindGroup(0, this.markersBindGroup);
             //renderPass.draw(6 * this.trees.getNumTrees()); // As many quads as we have trees

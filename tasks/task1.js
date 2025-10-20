@@ -12,6 +12,10 @@ class Tutorial {
         await this.render();
     }
 
+    /**
+     * @param {any} gui 
+     * @param {HTMLCanvasElement} canvas 
+     */
     constructor(gui, canvas) {
         this.gui = gui;
         this.canvas = canvas;
@@ -30,19 +34,19 @@ class Tutorial {
             }
             console.log("Hooray! WebGPU is supported in your browser!");
         }
+        
         this.adapter = await this.gpu.requestAdapter();
         this.device = await this.adapter.requestDevice();
     }
 
     async initializeBuffers() {
-        this.data = new Float32Array([1, 2, 3, 4]);
-        this.buffer = this.device.createBuffer({ // Create GPU buffer
-            size: this.data.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC, // Storage buffers can be indexed directly on the GPU
-            mappedAtCreation: true, // Enables us to write to the buffer immediately
+        this.data = new Uint32Array([1, 2, 3, 4]);
+        this.buffer = this.device.createBuffer({
+        size: this.data.byteLength,
+        // Storage buffers can be indexed directly on the GPU
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
-        new Float32Array(this.buffer.getMappedRange()).set(this.data); // Write to the buffer
-        this.buffer.unmap(); // Unmap on the CPU so that the GPU can use it
+        this.device.queue.writeBuffer(this.buffer, 0, this.data);
     }
 
     async initializeTextures() {
@@ -55,19 +59,20 @@ class Tutorial {
 
     async initializePipelines() {
         this.pipeline = this.device.createComputePipeline({
-            layout: "auto", // Bad practice. Good enough for a tutorial though
+            // Use simplistic auto-generation
+            // Bigger applications will manually generate a layout, and share it across muliple shaders
+            layout: "auto", 
             compute: {
                 module: this.device.createShaderModule({
                     code: SHADERS.add
                 }),
-                entryPoint: "main" // Name of the entry point function in the shader
             }
         });
     }
 
     async initializeBindGroups() {
         this.bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0), // Ideally created manually, but this is good enough for a tutorial
+            layout: this.pipeline.getBindGroupLayout(0), // group(0)
             entries: [
                 {
                     binding: 0, // Matches our shader!
@@ -87,6 +92,12 @@ class Tutorial {
 
     }
 
+    /**
+     * @template {Float32Array | Uint32Array | Int32Array} T
+     * @param {GPUBuffer} gpuBuffer
+     * @param {T} outputArray
+     * @returns {Promise<T>}
+     */
     async readBuffer(gpuBuffer, outputArray) {
         // This buffer can be read on the CPU because of MAP_READ
         const readBuffer = this.device.createBuffer({
@@ -94,7 +105,7 @@ class Tutorial {
             usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
         });
 
-        // Copy from 'buffer' to 'readBuffer'
+        // Copy from 'gpuBuffer' to 'readBuffer'
         const commandEncoder = this.device.createCommandEncoder();
         commandEncoder.copyBufferToBuffer(gpuBuffer, 0, readBuffer, 0, outputArray.byteLength);
         this.device.queue.submit([commandEncoder.finish()]);
@@ -102,8 +113,9 @@ class Tutorial {
         // Map the GPU data to the CPU
         await readBuffer.mapAsync(GPUMapMode.READ);
 
-        // Read the data.
-        const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+        // Read the data
+        const ArrayType = /** @type {new (buffer: ArrayBufferLike) => T} */ (outputArray.constructor);
+        const resultData = new ArrayType(readBuffer.getMappedRange());
 
         // Copy the data to the output array
         outputArray.set(resultData);
@@ -124,8 +136,10 @@ class Tutorial {
             computePass.end();
         }
         const commandBuffer = commandEncoder.finish();
+        
         this.device.queue.submit([commandBuffer]);
-        console.log(await this.readBuffer(this.buffer, new Float32Array(this.data.length)));
+        
+        console.log(await this.readBuffer(this.buffer, new Uint32Array(this.data.length)));
     }
 
 }
