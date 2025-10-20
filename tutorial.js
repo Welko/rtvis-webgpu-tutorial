@@ -12,6 +12,10 @@ class Tutorial {
         await this.render();
     }
 
+    /**
+     * @param {any} gui 
+     * @param {HTMLCanvasElement} canvas 
+     */
     constructor(gui, canvas) {
         this.gui = gui;
         this.canvas = canvas;
@@ -52,8 +56,14 @@ class Tutorial {
 
     }
 
+    /**
+     * @template {Float32Array | Uint32Array | Int32Array} T
+     * @param {GPUBuffer} gpuBuffer
+     * @param {T} outputArray
+     * @returns {Promise<T>}
+     */
     async readBuffer(gpuBuffer, outputArray) {
-
+        
     }
 
     async render() {
