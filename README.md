@@ -1129,7 +1129,7 @@ async initializePipelines() {
         layout: this.heatmapComputePipelineLayout,
         compute: {
             module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
-            entryPoint: null // Set for each pipeline
+            entryPoint: "" // Set below for each pipeline
         }
     };
     pipelineDescriptor.compute.entryPoint = "clear";
