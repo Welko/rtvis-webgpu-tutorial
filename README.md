@@ -234,7 +234,8 @@ async readBuffer(gpuBuffer, outputArray) {
     await readBuffer.mapAsync(GPUMapMode.READ);
 
     // Read the data
-    const resultData = new outputArray.constructor(readBuffer.getMappedRange());
+    const ArrayType = /** @type {new (buffer: ArrayBufferLike) => T} */ (outputArray.constructor);
+    const resultData = new ArrayType(readBuffer.getMappedRange());
 
     // Copy the data to the output array
     outputArray.set(resultData);
@@ -1433,3 +1434,4 @@ async initializeGUI() {
 ## Congrats!
 
 That concludes the tutorial `:)`
+
