@@ -104,6 +104,10 @@ class TreeProxy {
         return this.#treeStore.getCoordinatesLatLonBuffer()[this.#index * 2];
     }
 
+    getLongitude() {
+        return this.#treeStore.getCoordinatesLatLonBuffer()[this.#index * 2 + 1];
+    }
+
     /**
      * @deprecated
      * It's actually not deprecated :)
@@ -130,16 +134,12 @@ class TreeProxy {
         return (this.getLongitude() - mapLongitudeMin) / (mapLongitudeMax - mapLongitudeMin) * mapHeight;
     }
 
-    getLongitude() {
-        return this.#treeStore.getCoordinatesLatLonBuffer()[this.#index * 2 + 1];
-    }
-
     getTotalHeightCategory() {
         return this.#treeStore.getInfoBuffer()[this.#index * 4];
     }
 
     getTotalHeightRange() {
-        return this.#getSizeCategoryRange(this.getTotalHeightCategory());
+        return TreeProxy.#getSizeCategoryRange(this.getTotalHeightCategory());
     }
 
     getCrownDiameterCategory() {
@@ -147,7 +147,7 @@ class TreeProxy {
     }
 
     getCrownDiameterRange() {
-        return this.#getSizeCategoryRange(this.getCrownDiameterCategory());
+        return TreeProxy.#getSizeCategoryRange(this.getCrownDiameterCategory());
     }
 
     getDistrictNumber() {
@@ -203,8 +203,8 @@ class TreeProxy {
      * @param {number} category 
      * @returns {null | [number, number]} The min and max height in meters or null if unknown
      */
-    #getSizeCategoryRange(category) {
-        switch (this.getTotalHeightCategory()) {
+    static #getSizeCategoryRange(category) {
+        switch (category) {
             case 0: return null; // Unbekannt
             case 1: return [0, 5]; // 0-5 Meter
             case 2: return [6, 10]; // 6-10 Meter

@@ -49,7 +49,7 @@ async initializeWebGPU() {
     if (!this.gpu) {
         this.gpu = navigator.gpu;
         if (!this.gpu) {
-            const message = "WebGPU is not supported in your browser. Please use/update Chrome or Edge.";
+            const message = "WebGPU is not supported in your browser.";
             alert(message);
             throw new Error(message);
         }
@@ -1445,4 +1445,5 @@ async initializeGUI() {
 ## Congrats!
 
 That concludes the tutorial `:)`
+
 
