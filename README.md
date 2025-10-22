@@ -268,7 +268,18 @@ Duration: 15 minutes
 We start by loading some real data. The data we use here is from the [
 Baumkataster bzw. Bäume Standorte Wien](https://www.data.gv.at/katalog/dataset/c91a4635-8b7d-43fe-9b27-d95dec8392a7), a dataset of trees in Vienna.
 
-The data can be conveniently loaded with the provided `LOADER`. We may completely replace the old data and buffers with the new ones.
+The data can be conveniently loaded with the provided `LOADER`.
+We use this to load information per tree in a single list, in the format 
+
+```javascript
+[
+    treeHeightCategory0, crownDiameterCategory0, districtNumber0, circumferenceAt1mInCm0,
+    treeHeightCategory1, crownDiameterCategory1, districtNumber0, circumferenceAt1mInCm1,
+    ...
+]
+```
+
+and write it to a GPU buffer. We may completely replace the old data and buffers with the new ones.
 
 ```javascript
 async initializeBuffers() {
@@ -300,7 +311,7 @@ async render() {
 
 If we now refresh the page, you'll notice that the first 64 values of our buffer are at least 100, as expected.
 
-Now we do something more interesting than that. Let us count the number of trees for each district in Vienna. For that, we write a new shader.
+However, now we do something more interesting than that. We can now use this data to count the number of trees for each district in Vienna. For a large number of trees, it is much faster to do this on the GPU in parallel rather than on the CPU. For that, we write a new shader.
 
 Open `shaders/aggregate.js`. 
 
