@@ -19,7 +19,7 @@ class TreeStore {
      * @type {Uint32Array<ArrayBuffer>}
      * Layout: [
      *          treeHeightCategory0, crownDiameterCategory0, districtNumber0, circumferenceAt1mInCm0,
-     *          treeHeightCategory1, crownDiameterCategory1, districtNumber0, circumferenceAt1mInCm1,
+     *          treeHeightCategory1, crownDiameterCategory1, districtNumber1, circumferenceAt1mInCm1,
      *          ...
      *         ]
      */
