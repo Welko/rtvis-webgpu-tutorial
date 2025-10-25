@@ -39,8 +39,9 @@ This assumes that you have [Node.js](https://nodejs.org/en), git and a code edit
 
 ### Online Development (alternative)
 
-If you do not have Node.js installed, you can ... TODO: fill this out
+If you do not have Node.js installed, you can [edit this project online on Stackblitz](https://stackblitz.com/~/github.com/Welko/rtvis-webgpu-tutorial/). 
 
+**Make sure to download it at the end of the tutorial**
 
 ### Resources
 
