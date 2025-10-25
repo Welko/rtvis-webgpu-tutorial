@@ -15,14 +15,15 @@
 <body>
 
 <!-- GUI -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-
 <script type="module">
     import { Tutorial } from "./src/tutorial.js";
+    import GUI from 'lil-gui'; 
+
+    const gui = new GUI();
 
     window.addEventListener("load", () => {
         // Initialize GUI
-        const gui = new dat.GUI({ name: document.title });
+        const gui = new GUI({ name: document.title });
 
         // Initialize canvas
         const canvas = document.createElement("canvas");
