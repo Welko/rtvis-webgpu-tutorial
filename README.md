@@ -27,13 +27,23 @@ WebGPU-capable browsers:
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
 - MacOS: Chrome or Safari (macOS Tahoe 26 or later)
 
-First steps:
-- Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
-- Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
-- Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
-- If you want a smoother workflow, we recommend using a [live server](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server)
+### Local Development
 
-Other resources:
+This assumes that you have [Node.js](https://nodejs.org/en), git and a code editor.
+
+- Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
+- Open `src/tutorial.js` in your favorite IDE. All your Javascript code will go there.
+- Open a terminal and navigate to this folder.
+- Run `npm ci` to install the development server
+- Run `npm run start` and start developing
+
+### Online Development (alternative)
+
+If you do not have Node.js installed, you can ... TODO: fill this out
+
+
+### Resources
+
 - [Tutorial slides](slides.pdf)
 - [WebGPU Fundamentals](https://webgpufundamentals.org/)
 - [WebGPU Shading Language (WGSL) Tutorial](https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html)
