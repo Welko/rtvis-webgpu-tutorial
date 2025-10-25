@@ -157,7 +157,8 @@ async initializePipelines() {
         layout: "auto", 
         compute: {
             module: this.device.createShaderModule({
-                code: SHADERS.add
+                code: SHADERS.add,
+                label: "add"
             }),
         }
     });
@@ -361,7 +362,10 @@ async initializePipelines() {
     this.aggregatePipeline = this.device.createComputePipeline({
         layout: "auto",
         compute: {
-            module: this.device.createShaderModule({ code: SHADERS.aggregate }),
+            module: this.device.createShaderModule({ 
+                code: SHADERS.aggregate,
+                label: "aggregrate" 
+            }),
         }
     });
 }
@@ -533,7 +537,10 @@ First, for the pipeline:
 
 ```javascript
 async initializePipelines() {
-    const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+    const imageShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.image,
+        label: "image"
+    });
     this.imageRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -803,7 +810,10 @@ Now that we have all the buffers set up, we can proceed to creating our **pipeli
 ```javascript
 async initializePipelines() {
     ...
-    const markersShaderModule = this.device.createShaderModule({ code: SHADERS.markers });
+    const markersShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.markers,
+        label: "markers"
+    });
     this.markersRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -1140,7 +1150,10 @@ async initializePipelines() {
     const pipelineDescriptor = {
         layout: this.heatmapComputePipelineLayout,
         compute: {
-            module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
+            module: this.device.createShaderModule({ 
+                code: SHADERS.heatmapCompute,
+                label: "heatmapCompute"
+            }),
             entryPoint: "" // Set below for each pipeline
         }
     };
@@ -1312,7 +1325,10 @@ With the shader created, we go back to Javascript and introduce our new **pipeli
 ```javascript
 async initializePipelines() {
     ...
-    const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
+    const heatmapRenderShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.heatmapRender,
+        label: "heatmapRender"
+    });
     this.heatmapRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
