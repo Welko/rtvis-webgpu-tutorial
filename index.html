@@ -19,8 +19,6 @@
 
 <!-- Util -->
 <script src="lib/mipmap.js"></script>
-<script src="src/tree.js"></script>
-<script src="src/loader.js"></script>
 
 <!-- Shaders -->
 <script src="shaders/add.js"></script>
@@ -30,10 +28,9 @@
 <script src="shaders/heatmapCompute.js"></script>
 <script src="shaders/heatmapRender.js"></script>
 
-<!-- Tutorial -->
-<script src="src/tutorial.js"></script>
+<script type="module">
+    import { Tutorial } from "./src/tutorial.js";
 
-<script>
     window.addEventListener("load", () => {
         // Initialize GUI
         const gui = new dat.GUI({ name: document.title });

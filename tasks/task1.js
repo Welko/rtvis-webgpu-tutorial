@@ -1,4 +1,6 @@
-class Tutorial {
+import { LOADER } from "@/src/loader";
+
+export class Tutorial {
 
     async start() {
         await this.initializeWebGPU();

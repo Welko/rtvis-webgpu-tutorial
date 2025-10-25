@@ -9,6 +9,10 @@
     "allowJs": true,
     "checkJs": true,
 
+    "paths": {
+      "@/*": ["./*"]
+    },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -24,5 +28,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "tasks"]
 }

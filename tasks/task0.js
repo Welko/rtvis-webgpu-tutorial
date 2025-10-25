@@ -1,4 +1,6 @@
-class Tutorial {
+import { LOADER } from "@/src/loader";
+
+export class Tutorial {
 
     async start() {
         await this.initializeWebGPU();
@@ -71,7 +73,7 @@ class Tutorial {
      * @returns {Promise<T>}
      */
     async readBuffer(gpuBuffer, outputArray) {
-        
+        return null;
     }
 
     async render() {
