@@ -1,4 +1,4 @@
-class TreeStore {
+export class TreeStore {
 
     /**
      * @type {number}

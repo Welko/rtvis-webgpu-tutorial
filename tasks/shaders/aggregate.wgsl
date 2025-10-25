@@ -1,6 +1,3 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    aggregate: /* wgsl */ `
-
 struct TreeInfo {
     treeHeightCategory: u32,
     crownDiameterCategory: u32,
@@ -28,5 +25,3 @@ fn main(@builtin(global_invocation_id) globalId: vec3u) {
     let districtNumber = treeInfo.districtNumber;
     atomicAdd(&aggregatedValues.districtNumberOccurrences[districtNumber - 1], 1);
 }
-
-`});

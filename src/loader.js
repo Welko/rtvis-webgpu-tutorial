@@ -1,6 +1,8 @@
-const LOADER = {
+import { TreeStore } from "./tree";
 
-serverUrl: "https://raw.githubusercontent.com/Welko/rtvis-webgpu-tutorial/main",
+export const LOADER = {
+
+serverUrl: ".",
 
 /**
  * @param {string} url 

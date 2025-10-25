@@ -1,0 +1,22 @@
+{
+  "name": "rtvis-webgpu-tutorial",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vite --open",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.66",
+    "vite": "npm:rolldown-vite@7.1.19"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.1.19"
+  },
+  "dependencies": {
+    "lil-gui": "^0.21.0"
+  }
+}
