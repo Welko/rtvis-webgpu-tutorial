@@ -1,6 +1,3 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    markers: /* wgsl */ `
-
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32,
 };
@@ -116,5 +113,3 @@ fn fragment(input : FragmentInput) -> FragmentOutput {
         input.color,
     );
 }
-
-`});

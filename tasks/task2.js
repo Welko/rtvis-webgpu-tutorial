@@ -1,4 +1,5 @@
 import { LOADER } from "@/src/loader";
+import { SHADERS } from "./shaders";
 
 export class Tutorial {
 
