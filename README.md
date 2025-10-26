@@ -27,13 +27,24 @@ WebGPU-capable browsers:
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
 - MacOS: Chrome or Safari (macOS Tahoe 26 or later)
 
-First steps:
-- Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
-- Open `index.html` on your favorite WebGPU-capable browser (no server needed). On Windows, your URL will look something like `file:///C:/Projects/rtvis-webgpu-tutorial/index.html`
-- Open `tutorial.js` in your favorite IDE. All your Javascript code will go there.
-- If you want a smoother workflow, we recommend using a [live server](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server)
+### Local Development
 
-Other resources:
+This assumes that you have [Node.js](https://nodejs.org/en), git and a code editor.
+
+- Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
+- Open `src/tutorial.js` in your favorite IDE. All your Javascript code will go there.
+- Open a terminal and navigate to this folder.
+- Run `npm ci` to install the development server
+- Run `npm run start` and start developing
+
+### Online Development (alternative)
+
+If you do not have Node.js installed, you can [edit this project online on Stackblitz](https://stackblitz.com/~/github.com/Welko/rtvis-webgpu-tutorial/). 
+
+**Make sure to download it at the end of the tutorial**
+
+### Resources
+
 - [Tutorial slides](slides.pdf)
 - [WebGPU Fundamentals](https://webgpufundamentals.org/)
 - [WebGPU Shading Language (WGSL) Tutorial](https://webgpufundamentals.org/webgpu/lessons/webgpu-wgsl.html)
@@ -96,7 +107,7 @@ async initializeBuffers() {
 
 This is the data that we want to process on the GPU through a compute shader.
 
-Open the compute shader `shaders/add.js`. Note that this is a Javascript file. The shader code is written as a string and stored in the `window` object with the key `add`.
+Open the compute shader `src/shaders/add.js`. Note that this is a Javascript file. The shader code is written as a string and stored in the `window` object with the key `add`.
 
 The programming language of WebGPU shaders is `wgsl`. If you are using Visual Studio Code, we recommend you install the extension [WGSL Literal](https://marketplace.visualstudio.com/items?itemName=ggsimm.wgsl-literal).
 
@@ -157,7 +168,8 @@ async initializePipelines() {
         layout: "auto", 
         compute: {
             module: this.device.createShaderModule({
-                code: SHADERS.add
+                code: SHADERS.add,
+                label: "add"
             }),
         }
     });
@@ -314,7 +326,7 @@ If we now refresh the page, you'll notice that the first 64 values of our buffer
 
 However, now we do something more interesting than that. We can now use this data to count the number of trees for each district in Vienna. For a large number of trees, it is much faster to do this on the GPU in parallel rather than on the CPU. For that, we write a new shader.
 
-Open `shaders/aggregate.js`. 
+Open `src/shaders/aggregate.js`. 
 
 Note that some things are already set up for you. Most importantly, our buffer bindings:
 
@@ -361,7 +373,10 @@ async initializePipelines() {
     this.aggregatePipeline = this.device.createComputePipeline({
         layout: "auto",
         compute: {
-            module: this.device.createShaderModule({ code: SHADERS.aggregate }),
+            module: this.device.createShaderModule({ 
+                code: SHADERS.aggregate,
+                label: "aggregrate" 
+            }),
         }
     });
 }
@@ -473,7 +488,7 @@ For loading large 3D models, it can be beneficial to create a **vertex buffer**,
 
 Since we only render one quad (6 triangles with `triangle-list`), we hard-code the vertex and UV positions in the shader.
 
-Open `shaders/image.js`.
+Open `src/shaders/image.js`.
 
 This time, you will find only the definitions of our vertices and UVs.
 
@@ -533,7 +548,10 @@ First, for the pipeline:
 
 ```javascript
 async initializePipelines() {
-    const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+    const imageShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.image,
+        label: "image"
+    });
     this.imageRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -649,7 +667,7 @@ async initializeBuffers() {
 
 With this data now available, we move on to this task's shaders.
 
-Open `shaders/markers.js`.
+Open `src/shaders/markers.js`.
 
 Our vertices and UVs are there again, together with the function `latLonToXY`, that converts latitude and longitude coordinates into XY coordinates in the range [0,1].
 
@@ -803,7 +821,10 @@ Now that we have all the buffers set up, we can proceed to creating our **pipeli
 ```javascript
 async initializePipelines() {
     ...
-    const markersShaderModule = this.device.createShaderModule({ code: SHADERS.markers });
+    const markersShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.markers,
+        label: "markers"
+    });
     this.markersRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -947,7 +968,7 @@ For the final task, we will combine compute and render passes to produce a heatm
 
 This will require the compute shader to go through each tree, find out in which cell of our heatmap grid it is contained, and then increment the cell's count by one. When rendering the grid cells, this value must then be mapped to a color. To do that, we must also find out what is the largest value stored among all grid cells.
 
-Open `shaders/heatmapCompute.js`.
+Open `src/shaders/heatmapCompute.js`.
 
 You will find the definitions of two functions. We already know `latLonToXY`. The other function, `xyToCellIndex`, converts the XY coordinate of a tree into the index of a cell in our grid.
 
@@ -1140,7 +1161,10 @@ async initializePipelines() {
     const pipelineDescriptor = {
         layout: this.heatmapComputePipelineLayout,
         compute: {
-            module: this.device.createShaderModule({ code: SHADERS.heatmapCompute }),
+            module: this.device.createShaderModule({ 
+                code: SHADERS.heatmapCompute,
+                label: "heatmapCompute"
+            }),
             entryPoint: "" // Set below for each pipeline
         }
     };
@@ -1209,7 +1233,7 @@ async render() {
 
 Now that we're done with the computation of the heatmap, we move on to displaying it.
 
-Open `shaders/heatmapRender.js`;
+Open `src/shaders/heatmapRender.js`;
 
 You will find the familiar vertices and UVs we saw before. That is because we are using the exact same technique we used to render the tree markers, where each grid cell will be rendered as a quad.
 
@@ -1312,7 +1336,10 @@ With the shader created, we go back to Javascript and introduce our new **pipeli
 ```javascript
 async initializePipelines() {
     ...
-    const heatmapRenderShaderModule = this.device.createShaderModule({ code: SHADERS.heatmapRender });
+    const heatmapRenderShaderModule = this.device.createShaderModule({ 
+        code: SHADERS.heatmapRender,
+        label: "heatmapRender"
+    });
     this.heatmapRenderPipeline = this.device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -1402,7 +1429,7 @@ async initializeBindGroups() {
 }
 ```
 
-Open `shaders/heatmapRender.js`.
+Open `src/shaders/heatmapRender.js`.
 
 Remove the `// Dummy value for now` section and instead calculate a color value based on the tree count.
 
