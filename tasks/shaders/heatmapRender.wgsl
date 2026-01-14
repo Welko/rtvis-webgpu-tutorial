@@ -1,6 +1,3 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    heatmapRender: /* wgsl */ `
-
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32,
 };
@@ -110,5 +107,3 @@ fn fragment(input : FragmentInput) -> FragmentOutput {
         input.color,
     );
 }
-
-`});

@@ -1,6 +1,8 @@
-const LOADER = {
+import { TreeStore } from "./tree.js";
 
-serverUrl: "https://raw.githubusercontent.com/Welko/rtvis-webgpu-tutorial/main",
+export const LOADER = {
+
+serverUrl: ".",
 
 /**
  * @param {string} url 
@@ -155,10 +157,10 @@ loadTrees: async (lots=false) => {
 },
 
 loadMap: async() => {
-    const map = await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
+    const map = await LOADER.loadJson(LOADER.serverUrl + "/data/vienna.json");
 
     await Promise.all(Object.entries(map.images).map(async ([imageKey, imageFile]) => {
-        const image = await LOADER.loadImage(LOADER.serverUrl + "/map/" + imageFile);
+        const image = await LOADER.loadImage(LOADER.serverUrl + "/data/" + imageFile);
         map.images[imageKey] = await createImageBitmap(image);
     }));
 

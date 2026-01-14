@@ -1,5 +1,20 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    heatmapCompute: /* wgsl */ `
+const VERTICES = array<vec2f, 6>(
+    vec2f(-1, -1),
+    vec2f(-1, 1),
+    vec2f(1, -1),
+    vec2f(1, 1),
+    vec2f(-1, 1),
+    vec2f(1, -1),
+);
+
+const UVS = array<vec2f, 6>(
+    vec2f(0, 0),
+    vec2f(0, 1),
+    vec2f(1, 0),
+    vec2f(1, 1),
+    vec2f(0, 1),
+    vec2f(1, 0),
+);  
 
 fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     // Since our map area is kiiiiinda small, a linear mapping is okay
@@ -9,12 +24,4 @@ fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     );
 }
 
-fn xyToCellIndex(xy: vec2f) -> u32 {
-    let x: u32 = u32(xy.x * u.gridWidth);
-    let y: u32 = u32(xy.y * u.gridHeight);
-    return y * u32(u.gridWidth) + x;
-}
-
 // Your code here :)
-
-`});

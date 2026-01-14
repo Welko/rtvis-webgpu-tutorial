@@ -1,6 +1,3 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    heatmapCompute: /* wgsl */ `
-
 struct TreeCoordinates {
     lat: f32,
     lon: f32,
@@ -107,5 +104,3 @@ fn clear(@builtin(global_invocation_id) globalId: vec3u) {
     // Clear tree count
     atomicStore(&cells[cellIndex].treeCount, 0);
 }
-
-`});

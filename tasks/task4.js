@@ -1,4 +1,7 @@
-class Tutorial {
+import { LOADER } from "../src/loader.js";
+import { SHADERS } from "./shaders.js";
+
+export class Tutorial {
 
     async start() {
         await this.initializeWebGPU();
