@@ -1,15 +1,21 @@
-import add from "./shaders/add.wgsl?raw";
-import aggregate from "./shaders/aggregate.wgsl?raw";
-import image from "./shaders/image.wgsl?raw";
-import markers from "./shaders/markers.wgsl?raw";
-import heatmapCompute from "./shaders/heatmapCompute.wgsl?raw";
-import heatmapRender from "./shaders/heatmapRender.wgsl?raw";
+/**
+ * 
+ * @param {string} url a url that is relative to this file 
+ * @returns {Promise<string>}
+ */
+async function fetchTextFile(url) {
+  const response = await fetch(import.meta.resolve(url));
+  return await response.text();
+}
 
+// This should use text imports once those are stable
+// https://github.com/whatwg/html/issues/9444
 export const SHADERS = {
-  add,
-  aggregate,
-  image,
-  markers,
-  heatmapCompute,
-  heatmapRender,
+  add: await fetchTextFile("./shaders/add.wgsl"),
+  aggregate: await fetchTextFile("./shaders/aggregate.wgsl"),
+  image: await fetchTextFile("./shaders/image.wgsl"),
+  markers: await fetchTextFile("./shaders/markers.wgsl"),
+  heatmapCompute: await fetchTextFile("./shaders/heatmapCompute.wgsl"),
+  heatmapRender: await fetchTextFile("./shaders/heatmapRender.wgsl"),
 };
+

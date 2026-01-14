@@ -1,4 +1,4 @@
-import { TreeStore } from "./tree";
+import { TreeStore } from "./tree.js";
 
 export const LOADER = {
 
@@ -157,10 +157,10 @@ loadTrees: async (lots=false) => {
 },
 
 loadMap: async() => {
-    const map = await LOADER.loadJson(LOADER.serverUrl + "/map/vienna.json");
+    const map = await LOADER.loadJson(LOADER.serverUrl + "/data/vienna.json");
 
     await Promise.all(Object.entries(map.images).map(async ([imageKey, imageFile]) => {
-        const image = await LOADER.loadImage(LOADER.serverUrl + "/map/" + imageFile);
+        const image = await LOADER.loadImage(LOADER.serverUrl + "/data/" + imageFile);
         map.images[imageKey] = await createImageBitmap(image);
     }));
 

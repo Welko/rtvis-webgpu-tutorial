@@ -427,7 +427,7 @@ You should now see displayed on the console the number of trees counted per dist
 
 Duration: 10 minutes
 
-<img src="map/vienna-satellite.png" alt="A map of Vienna, the result of task 3" height="500">
+<img src="data/vienna-satellite.png" alt="A map of Vienna, the result of task 3" height="500">
 
 Finally we will render something on the screen. In this case, it will be just a simple texture.
 
@@ -641,7 +641,7 @@ async render() {
 
 And, finally, you should see a map of Vienna on your screen.
 
-<img src="map/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
+<img src="data/vienna-outdoors.png" alt="A map of Vienna, the result of task 3" height="500">
 
 ## Task 4 - Render Trees as Markers
 

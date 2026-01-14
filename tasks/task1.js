@@ -1,5 +1,5 @@
-import { LOADER } from "@/src/loader";
-import { SHADERS } from "./shaders";
+import { LOADER } from "../src/loader.js";
+import { SHADERS } from "./shaders.js";
 
 export class Tutorial {
 

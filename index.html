@@ -16,23 +16,19 @@
 
 <!-- GUI -->
 <script type="module">
-    import { Tutorial } from "./src/tutorial.js";
-    import GUI from 'lil-gui'; 
+    import { Tutorial } from "./tasks/task5.js";//"./src/tutorial.js";
+    import GUI from './lib/lil-gui.esm.js'; 
 
-    const gui = new GUI();
+    // Initialize GUI
+    const gui = new GUI({ name: document.title });
 
-    window.addEventListener("load", () => {
-        // Initialize GUI
-        const gui = new GUI({ name: document.title });
+    // Initialize canvas
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
 
-        // Initialize canvas
-        const canvas = document.createElement("canvas");
-        document.body.appendChild(canvas);
-
-        // Start tutorial
-        const tutorial = new Tutorial(gui, canvas);
-        tutorial.start();
-    });
+    // Start tutorial
+    const tutorial = new Tutorial(gui, canvas);
+    tutorial.start();
 </script>
 
 </body>
