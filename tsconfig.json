@@ -9,12 +9,8 @@
     "allowJs": true,
     "checkJs": true,
 
-    "paths": {
-      "@/*": ["./*"]
-    },
-
     /* Linting */
-    //"strict": true,
+    "strict": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
