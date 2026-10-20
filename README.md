@@ -27,21 +27,13 @@ WebGPU-capable browsers:
   - Enable the flags listed here: [https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc](https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#chromium-chrome-edge-etc)
 - MacOS: Chrome or Safari (macOS Tahoe 26 or later)
 
-### Local Development
+### Development
 
-This assumes that you have [Node.js](https://nodejs.org/en), git and a code editor.
+This assumes that you have git and a code editor with a HTTP server.
 
 - Clone this repository (`git clone https://github.com/Welko/rtvis-webgpu-tutorial`)
-- Open `src/tutorial.js` in your favorite IDE. All your Javascript code will go there.
-- Open a terminal and navigate to this folder.
-- Run `npm ci` to install the development server
-- Run `npm run start` and start developing
-
-### Online Development (alternative)
-
-If you do not have Node.js installed, you can [edit this project online on Stackblitz](https://stackblitz.com/~/github.com/Welko/rtvis-webgpu-tutorial/). 
-
-**Make sure to download it at the end of the tutorial**
+- Open the `index.html` with a HTTP server. We recommend [Live Preview](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server).
+- Open `src/tutorial.js` in your IDE. All your Javascript code will go there.
 
 ### Resources
 
