@@ -16,7 +16,7 @@ export class Tutorial {
     }
 
     /**
-     * @param {any} gui 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
      * @param {HTMLCanvasElement} canvas 
      */
     constructor(gui, canvas) {
