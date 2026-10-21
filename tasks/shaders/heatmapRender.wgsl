@@ -1,21 +1,20 @@
-struct VertexInput {
-    @builtin(vertex_index) vertexIndex: u32,
-}
+const VERTICES = array<vec2f, 6>(
+        vec2f(-1, -1),
+        vec2f(-1, 1),
+        vec2f(1, -1),
+        vec2f(1, 1),
+        vec2f(-1, 1),
+        vec2f(1, -1),
+    );
 
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-}
-
-struct FragmentInput {
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-}
-
-struct FragmentOutput {
-    @location(0) color: vec4f,
-}
+const UVS = array<vec2f, 6>(
+        vec2f(0, 0),
+        vec2f(0, 1),
+        vec2f(1, 0),
+        vec2f(1, 1),
+        vec2f(0, 1),
+        vec2f(1, 0),
+    );
 
 struct Cell {
     treeCount: u32,
@@ -46,23 +45,15 @@ var<storage, read> grid: Grid;
 @group(0) @binding(2)
 var<uniform> u: Uniforms;
 
-const VERTICES = array<vec2f, 6>(
-        vec2f(-1, -1),
-        vec2f(-1, 1),
-        vec2f(1, -1),
-        vec2f(1, 1),
-        vec2f(-1, 1),
-        vec2f(1, -1),
-    );
+struct VertexInput {
+    @builtin(vertex_index) vertexIndex: u32,
+}
 
-const UVS = array<vec2f, 6>(
-        vec2f(0, 0),
-        vec2f(0, 1),
-        vec2f(1, 0),
-        vec2f(1, 1),
-        vec2f(0, 1),
-        vec2f(1, 0),
-    );
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    @location(0) uv: vec2f,
+    @location(1) color: vec4f,
+}
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
@@ -100,7 +91,11 @@ fn vertex(input: VertexInput) -> VertexOutput {
     return VertexOutput(vec4f(vertex, 0, 1), UVS[input.vertexIndex % 6], color);
 }
 
+struct FragmentOutput {
+    @location(0) color: vec4f,
+}
+
 @fragment
-fn fragment(input: FragmentInput) -> FragmentOutput {
+fn fragment(input: VertexOutput) -> FragmentOutput {
     return FragmentOutput(input.color);
 }

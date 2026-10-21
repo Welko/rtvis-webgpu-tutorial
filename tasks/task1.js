@@ -2,7 +2,6 @@ import { LOADER } from "../src/loader.js";
 import { SHADERS } from "./shaders.js";
 
 export class Tutorial {
-
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
@@ -10,14 +9,13 @@ export class Tutorial {
         await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
-        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
 
     /**
-     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
-     * @param {HTMLCanvasElement} canvas 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui
+     * @param {HTMLCanvasElement} canvas
      */
     constructor(gui, canvas) {
         this.gui = gui;
@@ -31,7 +29,7 @@ export class Tutorial {
         if (!this.gpu) {
             this.gpu = navigator.gpu;
             if (!this.gpu) {
-                const message = "WebGPU is not supported in your browser. Please use/update Chrome or Edge.";
+                const message = "WebGPU is not supported in your browser.";
                 alert(message);
                 throw new Error(message);
             }
@@ -45,9 +43,9 @@ export class Tutorial {
     async initializeBuffers() {
         this.data = new Uint32Array([1, 2, 3, 4]);
         this.buffer = this.device.createBuffer({
-        size: this.data.byteLength,
-        // Storage buffers can be indexed directly on the GPU
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+            size: this.data.byteLength,
+            // Storage buffers can be indexed directly on the GPU
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
         });
         this.device.queue.writeBuffer(this.buffer, 0, this.data);
     }
@@ -63,11 +61,12 @@ export class Tutorial {
     async initializePipelines() {
         this.pipeline = this.device.createComputePipeline({
             // Use simplistic auto-generation
-            // Bigger applications will manually generate a layout, and share it across muliple shaders
-            layout: "auto", 
+            // Bigger applications will manually generate a layout, and share it across multiple shaders
+            layout: "auto",
             compute: {
                 module: this.device.createShaderModule({
-                    code: SHADERS.add
+                    code: SHADERS.add,
+                    label: "add",
                 }),
             }
         });
@@ -85,10 +84,6 @@ export class Tutorial {
                 }
             ]
         });
-    }
-
-    async initializeAttachments() {
-        
     }
 
     async initializeGUI() {
