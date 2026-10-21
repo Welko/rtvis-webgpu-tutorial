@@ -8,16 +8,23 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            background: #c6339e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            background: black;
+            border: 2px solid rgb(135, 135, 135);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
-
 <!-- GUI -->
 <script type="module">
     import { Tutorial } from "./src/tutorial.js";
-    import GUI from "./lib/lil-gui.esm.js"; 
+    import GUI from "./lib/lil-gui.esm.js";
 
     // Initialize GUI
     const gui = new GUI({ name: document.title });

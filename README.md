@@ -116,7 +116,7 @@ Then we add our **compute entry point**.
 @compute
 @workgroup_size(64)
 fn main(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&data)) {
+    if globalId.x >= arrayLength(&data) {
         return;
     }
     // Our computations will go here :)
@@ -129,7 +129,7 @@ Because a workgroup is fixed-size, it is possible that more threads than data el
 
 ```wgsl
 // globalId.x is our thread ID
-if (globalId.x >= arrayLength(&data)) {
+if globalId.x >= arrayLength(&data) {
     // Current thread is out of bounds. Do nothing.
     return;
 }
@@ -143,7 +143,7 @@ Finally, we can use the thread ID to do something with the data. In this case, w
 @compute
 @workgroup_size(64)
 fn main(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&data)) {
+    if globalId.x >= arrayLength(&data) {
         return;
     }
     data[globalId.x] += 100u;
@@ -326,7 +326,7 @@ Note that some things are already set up for you. Most importantly, our buffer b
 struct AggregatedValues {
     // Array of 23 atomic unsigned integers (one for each district in Vienna)
     districtNumberOccurrences: array<atomic<u32>, 23>,
-};
+}
 
 // Our storage buffer at binding 0 now is of type TreeInfo (see the TreeInfo struct)
 @group(0) @binding(0) var<storage, read> treeInfo: array<TreeInfo>;
@@ -496,12 +496,12 @@ Next, we define the vertex shader. Other graphics APIs provide global variables 
 ```wgsl
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32, // Analogous to gl_VertexID in OpenGL
-};
+}
 
 struct VertexOutput {
-    @builtin(position) position: vec4f, // Built-in vertex position output
-    @location(0) uv: vec2f, // Varying passed to fragment shader
-};
+    @builtin(position) position: vec4f,
+    @location(0) uv: vec2f,
+}
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
@@ -517,20 +517,16 @@ fn vertex(input: VertexInput) -> VertexOutput {
 In the fragment shader, we then use our sampler to sample the texture.
 
 ```wgsl
-struct FragmentInput {
-    @location(0) uv: vec2f, // Varying from vertex shader
-};
+// The fragment input comes from the vertex shader's output (VertexOutput)
 
 struct FragmentOutput {
-    @location(0) color: vec4f, // Built-in fragment color output (analogous to gl_FragColor)
-};
+    @location(0) color: vec4f,
+}
 
 @fragment
-fn fragment(input : FragmentInput) -> FragmentOutput {
-    return FragmentOutput(
-        // Sample our texture
-        textureSample(texture, linearSampler, input.uv),
-    );
+fn fragment(input: VertexOutput) -> FragmentOutput {
+    let color = textureSample(texture, linearSampler, input.uv);
+    return FragmentOutput(color);
 }
 ```
 
@@ -669,14 +665,14 @@ As you may have noticed, the function `latLonToXY` uses an object `u` that is no
 struct TreeCoordinates {
     lat: f32,
     lon: f32,
-};
+}
 
 struct TreeInfo {
     treeHeightCategory: u32,
     crownDiameterCategory: u32,
     districtNumber: u32,
     circumferenceAt1mInCm: u32,
-};
+}
 
 struct Uniforms {
     mapWidth: f32,
@@ -688,7 +684,7 @@ struct Uniforms {
     markerSize: f32,
     unused: f32, // Padding
     markerColor: vec4f,
-};
+}
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
 @group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
@@ -704,13 +700,13 @@ We will **NOT** use instanced rendering here. Instead, we go even more hardcore 
 ```wgsl
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32,
-};
+}
 
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) uv: vec2f,
     @location(1) color: vec4f,
-};
+}
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
@@ -747,17 +743,12 @@ fn vertex(input: VertexInput) -> VertexOutput {
 And very little work is left for our fragment shader to do.
 
 ```wgsl
-struct FragmentInput {
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-};
-
 struct FragmentOutput {
     @location(0) color: vec4f,
-};
+}
 
 @fragment
-fn fragment(input : FragmentInput) -> FragmentOutput {
+fn fragment(input: VertexOutput) -> FragmentOutput {
     return FragmentOutput(
         input.color,
     );
@@ -970,19 +961,19 @@ We start, as per usual, by defining our buffers. We introduce one buffer that st
 struct TreeCoordinates {
     lat: f32,
     lon: f32,
-};
+}
 
 struct TreeInfo {
     treeHeightCategory: u32,
     crownDiameterCategory: u32,
     districtNumber: u32,
     circumferenceAt1mInCm: u32,
-};
+}
 
 struct Cell {
     // Each cell will hold its tree count
     treeCount: atomic<u32>
-};
+}
 
 struct Grid {
     // Largest number of trees stores in a single cell of the grid
@@ -1001,7 +992,7 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32, // Number of cells on the grid's width
     gridHeight: f32, // Number of cells on the grid's height
-};
+}
 
 @group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
 @group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
@@ -1015,10 +1006,9 @@ In this shader, we will introduce **three entry points**. One (called `count`) w
 First, we add the `count` entry point, which is very similar to the `add` shader we wrote in Task 1.
 
 ```wgsl
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn count(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&treeInfo)) {
+    if globalId.x >= arrayLength(&treeInfo) {
         return;
     }
 
@@ -1040,10 +1030,9 @@ fn count(@builtin(global_invocation_id) globalId: vec3u) {
 Then, we add the `max` entry point.
 
 ```wgsl
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn max(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&cells)) {
+    if globalId.x >= arrayLength(&cells) {
         return;
     }
 
@@ -1058,15 +1047,14 @@ fn max(@builtin(global_invocation_id) globalId: vec3u) {
 And, finally, the `clear` entry point.
 
 ```wgsl
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn clear(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&cells)) {
+    if globalId.x >= arrayLength(&cells) {
         return;
     }
 
     // Clear max tree count
-    if (globalId.x == 0) {
+    if globalId.x == 0 {
         atomicStore(&grid.maxTreeCount, 0);
     }
 
@@ -1150,22 +1138,23 @@ With the layouts created, we can then create the **pipelines** and the **bind gr
 ```javascript
 async initializePipelines() {
     ...
-    const pipelineDescriptor = {
+    // Heatmap compute shaders
+    const heatmapShaderModule = this.device.createShaderModule({
+        code: SHADERS.heatmapCompute,
+        label: "heatmapCompute",
+    });
+    this.heatmapComputeClearPipeline = this.device.createComputePipeline({
         layout: this.heatmapComputePipelineLayout,
-        compute: {
-            module: this.device.createShaderModule({ 
-                code: SHADERS.heatmapCompute,
-                label: "heatmapCompute"
-            }),
-            entryPoint: "" // Set below for each pipeline
-        }
-    };
-    pipelineDescriptor.compute.entryPoint = "clear";
-    this.heatmapComputeClearPipeline = this.device.createComputePipeline(pipelineDescriptor);
-    pipelineDescriptor.compute.entryPoint = "count";
-    this.heatmapComputeCountPipeline = this.device.createComputePipeline(pipelineDescriptor);
-    pipelineDescriptor.compute.entryPoint = "max";
-    this.heatmapComputeMaxPipeline = this.device.createComputePipeline(pipelineDescriptor);
+        compute: { module: heatmapShaderModule, entryPoint: "clear" },
+    });
+    this.heatmapComputeCountPipeline = this.device.createComputePipeline({
+        layout: this.heatmapComputePipelineLayout,
+        compute: { module: heatmapShaderModule, entryPoint: "count" },
+    });
+    this.heatmapComputeMaxPipeline = this.device.createComputePipeline({
+        layout: this.heatmapComputePipelineLayout,
+        compute: { module: heatmapShaderModule, entryPoint: "max" },
+    });
 }
 
 async initializeBindGroups() {
@@ -1234,7 +1223,7 @@ First, we introduce the buffer bindings.
 ```wgsl
 struct Cell {
     treeCount: u32,
-};
+}
 
 struct Grid {
     maxTreeCount: u32,
@@ -1252,7 +1241,7 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32,
     gridHeight: f32,
-};
+}
 
 @group(0) @binding(0) var<storage, read> cells: array<Cell>;
 @group(0) @binding(1) var<storage, read> grid: Grid;
@@ -1266,13 +1255,13 @@ Next, we add the vertex shader.
 ```wgsl
 struct VertexInput {
     @builtin(vertex_index) vertexIndex: u32,
-};
+}
 
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) uv: vec2f,
     @location(1) color: vec4f,
-};
+}
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
@@ -1306,17 +1295,12 @@ Note that we are assigning an arbitrary color to each grid cell. Later, we will 
 Once again, the fragment shader doesn't do much.
 
 ```wgsl
-struct FragmentInput {
-    @location(0) uv: vec2f,
-    @location(1) color: vec4f,
-};
-
 struct FragmentOutput {
     @location(0) color: vec4f,
-};
+}
 
 @fragment
-fn fragment(input : FragmentInput) -> FragmentOutput {
+fn fragment(input: VertexOutput) -> FragmentOutput {
     return FragmentOutput(
         input.color,
     );
@@ -1439,7 +1423,7 @@ let blendingFactor = f32(count) / f32(maxCount);
 //let blendingFactor = log2(f32(count) + 1) / log2(f32(maxCount) + 1);
 
 var color = mix(color0, color1, blendingFactor);
-if (count == 0) {
+if count == 0 {
     color.a = 0;
 }
 ```
