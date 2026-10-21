@@ -1,21 +1,18 @@
-window.SHADERS = Object.assign(window.SHADERS || {}, {
-    heatmapCompute: /* wgsl */ `
-
 struct TreeCoordinates {
     lat: f32,
     lon: f32,
-};
+}
 
 struct TreeInfo {
     treeHeightCategory: u32,
     crownDiameterCategory: u32,
     districtNumber: u32,
     circumferenceAt1mInCm: u32,
-};
+}
 
 struct Cell {
     treeCount: atomic<u32>,
-};
+}
 
 struct Grid {
     maxTreeCount: atomic<u32>,
@@ -33,20 +30,25 @@ struct Uniforms {
     markerColor: vec4f,
     gridWidth: f32,
     gridHeight: f32,
-};
+}
 
-@group(0) @binding(0) var<storage, read> treeCoordinates: array<TreeCoordinates>;
-@group(0) @binding(1) var<storage, read> treeInfo: array<TreeInfo>;
-@group(0) @binding(2) var<storage, read_write> cells: array<Cell>;
-@group(0) @binding(3) var<storage, read_write> grid: Grid;
-@group(0) @binding(4) var<uniform> u: Uniforms;
+@group(0) @binding(0)
+var<storage, read> treeCoordinates: array<TreeCoordinates>;
+@group(0) @binding(1)
+var<storage, read> treeInfo: array<TreeInfo>;
+@group(0) @binding(2)
+var<storage, read_write> cells: array<Cell>;
+@group(0) @binding(3)
+var<storage, read_write> grid: Grid;
+@group(0) @binding(4)
+var<uniform> u: Uniforms;
 
 fn latLonToXY(lat: f32, lon: f32) -> vec2f {
     // Since our map area is kiiiiinda small, a linear mapping is okay
     return vec2f(
-        (lon - u.mapLongitudeMin) / (u.mapLongitudeMax - u.mapLongitudeMin),
-        (lat - u.mapLatitudeMin) / (u.mapLatitudeMax - u.mapLatitudeMin),
-    );
+            (lon - u.mapLongitudeMin) / (u.mapLongitudeMax - u.mapLongitudeMin),
+            (lat - u.mapLatitudeMin) / (u.mapLatitudeMax - u.mapLatitudeMin),
+        );
 }
 
 fn xyToCellIndex(xy: vec2f) -> u32 {
@@ -55,10 +57,9 @@ fn xyToCellIndex(xy: vec2f) -> u32 {
     return y * u32(u.gridWidth) + x;
 }
 
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn count(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&treeInfo)) {
+    if globalId.x >= arrayLength(&treeInfo) {
         return;
     }
 
@@ -76,10 +77,9 @@ fn count(@builtin(global_invocation_id) globalId: vec3u) {
     atomicAdd(&cells[cellIndex].treeCount, 1);
 }
 
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn max(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&cells)) {
+    if globalId.x >= arrayLength(&cells) {
         return;
     }
 
@@ -90,15 +90,14 @@ fn max(@builtin(global_invocation_id) globalId: vec3u) {
     atomicMax(&grid.maxTreeCount, treeCount);
 }
 
-@compute
-@workgroup_size(64)
+@compute @workgroup_size(64)
 fn clear(@builtin(global_invocation_id) globalId: vec3u) {
-    if (globalId.x >= arrayLength(&cells)) {
+    if globalId.x >= arrayLength(&cells) {
         return;
     }
 
     // Clear max tree count
-    if (globalId.x == 0) {
+    if globalId.x == 0 {
         atomicStore(&grid.maxTreeCount, 0);
     }
 
@@ -107,5 +106,3 @@ fn clear(@builtin(global_invocation_id) globalId: vec3u) {
     // Clear tree count
     atomicStore(&cells[cellIndex].treeCount, 0);
 }
-
-`});

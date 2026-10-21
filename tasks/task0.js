@@ -1,4 +1,7 @@
-class Tutorial {
+import { LOADER } from "../src/loader.js";
+import { SHADERS } from "./shaders.js";
+
+export class Tutorial {
 
     async start() {
         await this.initializeWebGPU();
@@ -13,7 +16,7 @@ class Tutorial {
     }
 
     /**
-     * @param {any} gui 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
      * @param {HTMLCanvasElement} canvas 
      */
     constructor(gui, canvas) {
@@ -71,7 +74,7 @@ class Tutorial {
      * @returns {Promise<T>}
      */
     async readBuffer(gpuBuffer, outputArray) {
-        
+        return null;
     }
 
     async render() {
