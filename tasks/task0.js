@@ -2,7 +2,6 @@ import { LOADER } from "../src/loader.js";
 import { SHADERS } from "./shaders.js";
 
 export class Tutorial {
-
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
@@ -10,14 +9,13 @@ export class Tutorial {
         await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
-        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
 
     /**
-     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
-     * @param {HTMLCanvasElement} canvas 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui
+     * @param {HTMLCanvasElement} canvas
      */
     constructor(gui, canvas) {
         this.gui = gui;
@@ -31,7 +29,7 @@ export class Tutorial {
         if (!this.gpu) {
             this.gpu = navigator.gpu;
             if (!this.gpu) {
-                const message = "WebGPU is not supported in your browser. Please use/update Chrome or Edge.";
+                const message = "WebGPU is not supported in your browser.";
                 alert(message);
                 throw new Error(message);
             }
@@ -57,10 +55,6 @@ export class Tutorial {
 
     async initializeBindGroups() {
 
-    }
-
-    async initializeAttachments() {
-        
     }
 
     async initializeGUI() {

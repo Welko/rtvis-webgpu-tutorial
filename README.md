@@ -530,7 +530,7 @@ fn fragment(input: VertexOutput) -> FragmentOutput {
 }
 ```
 
-Like previously, we must still create a **pipeline** and **bind group**. Additionally, we also need to create a **color attachment**, which describes how the output of our render pass behaves.
+Like previously, we must still create a **pipeline** and **bind group**.
 
 First, for the pipeline:
 
@@ -573,26 +573,6 @@ async initializeBindGroups() {
 }
 ```
 
-And lastly, the color attachment:
-
-```javascript
-async initializeAttachments() {
-    // Set canvas css size
-    const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
-    this.canvas.style.width = minSide + "px";
-    this.canvas.style.height = minSide + "px";
-
-    // Color attachment to draw to
-    /** @type {GPURenderPassColorAttachment} */
-    this.colorAttachment = {
-        view: null, // Will be set in render(), i.e., every frame
-        loadOp: "clear",
-        clearValue: {r: 0, g: 0, b: 0, a: 0},
-        storeOp: "store"
-    };
-}
-```
-
 There is one last step before rendering: setting up the HTML canvas. That is done analogously to WebGL (where we use `canvas.getContext("webgl)`), followed by a configuration of the context:
 
 ```javascript
@@ -607,15 +587,19 @@ async initializeWebGPU() {
 ```
 
 And finally, we can encode our commands into a buffer and submit it to the GPU!
+The **color attachment** of the render pass describes how the output behaves.
 
 ```javascript
 async render() {
-    this.colorAttachment.view = this.context.getCurrentTexture().createView();
-
     const commandEncoder = this.device.createCommandEncoder();
     {
         const renderPass = commandEncoder.beginRenderPass({
-            colorAttachments: [this.colorAttachment]
+            colorAttachments: [{
+                view: this.context.getCurrentTexture().createView(),
+                loadOp: "clear",
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                storeOp: "store"
+            }]
         });
         renderPass.setPipeline(this.imageRenderPipeline);
         renderPass.setBindGroup(0, this.imageBindGroup);
@@ -844,7 +828,12 @@ async render() {
     const commandEncoder = this.device.createCommandEncoder();
     {
         const renderPass = commandEncoder.beginRenderPass({
-            colorAttachments: [this.colorAttachment]
+            colorAttachments: [{
+                view: this.context.getCurrentTexture().createView(),
+                loadOp: "clear",
+                clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                storeOp: "store"
+            }]
         });
 
         // Render map
@@ -1362,7 +1351,12 @@ Now we render the heatmap to see if we did everything right so far.
         {
             // Render Pass
             const renderPass = commandEncoder.beginRenderPass({
-                colorAttachments: [this.colorAttachment]
+                colorAttachments: [{
+                    view: this.context.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                    storeOp: "store"
+                }]
             });
 
             // Render map

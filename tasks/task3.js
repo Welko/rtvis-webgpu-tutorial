@@ -2,7 +2,6 @@ import { LOADER } from "../src/loader.js";
 import { SHADERS } from "./shaders.js";
 
 export class Tutorial {
-
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
@@ -10,14 +9,13 @@ export class Tutorial {
         await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
-        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
 
     /**
-     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
-     * @param {HTMLCanvasElement} canvas 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui
+     * @param {HTMLCanvasElement} canvas
      */
     constructor(gui, canvas) {
         this.gui = gui;
@@ -31,7 +29,7 @@ export class Tutorial {
         if (!this.gpu) {
             this.gpu = navigator.gpu;
             if (!this.gpu) {
-                const message = "WebGPU is not supported in your browser. Please use/update Chrome or Edge.";
+                const message = "WebGPU is not supported in your browser.";
                 alert(message);
                 throw new Error(message);
             }
@@ -69,21 +67,21 @@ export class Tutorial {
 
         const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
         this.gpuMapTexture = this.device.createTexture({
-        size: [image.width, image.height],
-        format: "rgba8unorm",
-        // TEXTURE_BINDING is needed to bind the texture to the pipeline
-        // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
-        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+            size: [image.width, image.height],
+            format: "rgba8unorm",
+            // TEXTURE_BINDING is needed to bind the texture to the pipeline
+            // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
         });
         this.device.queue.copyExternalImageToTexture(
-            {source: image, flipY: true}, // Source
-            {texture: this.gpuMapTexture}, // Destination
+            { source: image, flipY: true }, // Source
+            { texture: this.gpuMapTexture }, // Destination
             [image.width, image.height] // Size
         );
         
         this.sampler = this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear'
+            magFilter: "linear",
+            minFilter: "linear"
         });
         
         // Set canvas render size to image dimension
@@ -96,7 +94,10 @@ export class Tutorial {
     }
 
     async initializePipelines() {
-        const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+        const imageShaderModule = this.device.createShaderModule({
+            code: SHADERS.image,
+            label: "image"
+        });
         this.imageRenderPipeline = this.device.createRenderPipeline({
             layout: "auto",
             vertex: {
@@ -123,22 +124,6 @@ export class Tutorial {
                 { binding: 1, resource: this.sampler },
             ]
         });
-    }
-
-    async initializeAttachments() {
-        // Set canvas css size
-        const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
-        this.canvas.style.width = minSide + "px";
-        this.canvas.style.height = minSide + "px";
-
-        // Color attachment to draw to
-        /** @type {GPURenderPassColorAttachment} */
-        this.colorAttachment = {
-            view: null, // Will be set in render(), i.e., every frame
-            loadOp: "clear",
-            clearValue: {r: 0, g: 0, b: 0, a: 0},
-            storeOp: "store"
-        };
     }
 
     async initializeGUI() {
@@ -180,12 +165,15 @@ export class Tutorial {
     }
 
     async render() {
-        this.colorAttachment.view = this.context.getCurrentTexture().createView();
-
         const commandEncoder = this.device.createCommandEncoder();
         {
             const renderPass = commandEncoder.beginRenderPass({
-                colorAttachments: [this.colorAttachment]
+                colorAttachments: [{
+                    view: this.context.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                    storeOp: "store"
+                }]
             });
             renderPass.setPipeline(this.imageRenderPipeline);
             renderPass.setBindGroup(0, this.imageBindGroup);

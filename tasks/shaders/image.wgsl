@@ -22,7 +22,7 @@ var texture: texture_2d<f32>;
 var linearSampler: sampler;
 
 struct VertexInput {
-    @builtin(vertex_index) vertexIndex: u32,
+    @builtin(vertex_index) vertexIndex: u32, // Analogous to gl_VertexID in OpenGL
 }
 
 struct VertexOutput {
@@ -32,18 +32,22 @@ struct VertexOutput {
 
 @vertex
 fn vertex(input: VertexInput) -> VertexOutput {
-    return VertexOutput(vec4f(VERTICES[input.vertexIndex % 6], 0, 1), UVS[input.vertexIndex % 6]);
+    return VertexOutput(
+            // Index our vertex/UV data using the current vertex's index
+            // %6 just for safety in case the draw call has more than 6 vertices
+            vec4f(VERTICES[input.vertexIndex % 6], 0, 1),
+            UVS[input.vertexIndex % 6],
+        );
 }
 
-struct FragmentInput {
-    @location(0) uv: vec2f,
-}
+// The fragment input comes from the vertex shader's output (VertexOutput)
 
 struct FragmentOutput {
     @location(0) color: vec4f,
 }
 
 @fragment
-fn fragment(input: FragmentInput) -> FragmentOutput {
-    return FragmentOutput(textureSample(texture, linearSampler, input.uv));
+fn fragment(input: VertexOutput) -> FragmentOutput {
+    let color = textureSample(texture, linearSampler, input.uv);
+    return FragmentOutput(color);
 }

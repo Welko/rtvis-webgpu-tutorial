@@ -2,7 +2,6 @@ import { LOADER } from "../src/loader.js";
 import { SHADERS } from "./shaders.js";
 
 export class Tutorial {
-
     async start() {
         await this.initializeWebGPU();
         await this.initializeBuffers();
@@ -10,14 +9,13 @@ export class Tutorial {
         await this.initializeLayouts();
         await this.initializePipelines();
         await this.initializeBindGroups();
-        await this.initializeAttachments();
         await this.initializeGUI();
         await this.render();
     }
 
     /**
-     * @param {import("../lib/lil-gui.esm.js").GUI} gui 
-     * @param {HTMLCanvasElement} canvas 
+     * @param {import("../lib/lil-gui.esm.js").GUI} gui
+     * @param {HTMLCanvasElement} canvas
      */
     constructor(gui, canvas) {
         this.gui = gui;
@@ -31,7 +29,7 @@ export class Tutorial {
         if (!this.gpu) {
             this.gpu = navigator.gpu;
             if (!this.gpu) {
-                const message = "WebGPU is not supported in your browser. Please use/update Chrome or Edge.";
+                const message = "WebGPU is not supported in your browser.";
                 alert(message);
                 throw new Error(message);
             }
@@ -64,12 +62,11 @@ export class Tutorial {
         });
         
         // TreeCoordinates
-        this.gpuTreeCoodinates = this.device.createBuffer({
+        this.gpuTreeCoordinates = this.device.createBuffer({
             size: this.trees.getCoordinatesLatLonBuffer().byteLength,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        this.device.queue.writeBuffer(this.gpuTreeCoodinates, 0, this.trees.getCoordinatesLatLonBuffer());
-        
+        this.device.queue.writeBuffer(this.gpuTreeCoordinates, 0, this.trees.getCoordinatesLatLonBuffer());
         // Uniforms
         this.uniforms = {
             markerSize: 0.01,
@@ -89,21 +86,22 @@ export class Tutorial {
 
         const image = this.map.images.outdoors; // Try 'satellite' or 'streets' as well
         this.gpuMapTexture = this.device.createTexture({
-        size: [image.width, image.height],
-        format: "rgba8unorm",
-        // TEXTURE_BINDING is needed to bind the texture to the pipeline
-        // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
-        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING  | GPUTextureUsage.RENDER_ATTACHMENT,
+            size: [image.width, image.height],
+            format: "rgba8unorm",
+            // TEXTURE_BINDING is needed to bind the texture to the pipeline
+            // We also need to copy the image to the texture, so we need COPY_DST and RENDER_ATTACHMENT as well
+            usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT
+
         });
         this.device.queue.copyExternalImageToTexture(
-            {source: image, flipY: true}, // Source
-            {texture: this.gpuMapTexture}, // Destination
-            [image.width, image.height] // Size
+            { source: image, flipY: true }, // Source
+            { texture: this.gpuMapTexture }, // Destination
+            [image.width, image.height], // Size
         );
         
         this.sampler = this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear'
+            magFilter: "linear",
+            minFilter: "linear"
         });
         
         // Set canvas render size to image dimension
@@ -116,7 +114,10 @@ export class Tutorial {
     }
 
     async initializePipelines() {
-        const imageShaderModule = this.device.createShaderModule({ code: SHADERS.image });
+        const imageShaderModule = this.device.createShaderModule({
+            code: SHADERS.image,
+            label: "image"
+        });
         this.imageRenderPipeline = this.device.createRenderPipeline({
             layout: "auto",
             vertex: {
@@ -134,7 +135,10 @@ export class Tutorial {
             },
         });
 
-        const markersShaderModule = this.device.createShaderModule({ code: SHADERS.markers });
+        const markersShaderModule = this.device.createShaderModule({
+            code: SHADERS.markers,
+            label: "markers"
+        });
         this.markersRenderPipeline = this.device.createRenderPipeline({
             layout: "auto",
             vertex: {
@@ -155,34 +159,18 @@ export class Tutorial {
             layout: this.imageRenderPipeline.getBindGroupLayout(0),
             entries: [
                 { binding: 0, resource: this.gpuMapTexture.createView() },
-                { binding: 1, resource: this.sampler },
+                { binding: 1, resource: this.sampler }
             ]
         });
 
         this.markersBindGroup = this.device.createBindGroup({
             layout: this.markersRenderPipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: { buffer: this.gpuTreeCoodinates } },
+                { binding: 0, resource: { buffer: this.gpuTreeCoordinates } },
                 { binding: 1, resource: { buffer: this.gpuTreeInfo } },
-                { binding: 2, resource: { buffer: this.gpuUniforms } },
+                { binding: 2, resource: { buffer: this.gpuUniforms } }
             ]
         });
-    }
-
-    async initializeAttachments() {
-        // Set canvas css size
-        const minSide = -100 + Math.min(this.canvas.parentElement.clientWidth, this.canvas.parentElement.clientHeight);
-        this.canvas.style.width = minSide + "px";
-        this.canvas.style.height = minSide + "px";
-
-        // Color attachment to draw to
-        /** @type {GPURenderPassColorAttachment} */
-        this.colorAttachment = {
-            view: null, // Will be set in render(), i.e., every frame
-            loadOp: "clear",
-            clearValue: {r: 0, g: 0, b: 0, a: 0},
-            storeOp: "store"
-        };
     }
 
     async initializeGUI() {
@@ -226,27 +214,34 @@ export class Tutorial {
     async render() {
         // Copy the uniforms to the GPU buffer
         // Warning: the layout must match the layout of the uniform buffer in the shader
-        this.device.queue.writeBuffer(this.gpuUniforms, 0, new Float32Array([
-            this.map.width,
-            this.map.height,
-            this.map.latitude.min,
-            this.map.latitude.max,
-            this.map.longitude.min,
-            this.map.longitude.max,
-            this.uniforms.markerSize,
-            0, // Unused
-            this.uniforms.markerColor[0] / 255,
-            this.uniforms.markerColor[1] / 255,
-            this.uniforms.markerColor[2] / 255,
-            this.uniforms.markerAlpha,
-        ]));
-
-        this.colorAttachment.view = this.context.getCurrentTexture().createView();
+        this.device.queue.writeBuffer(
+            this.gpuUniforms,
+            0,
+            new Float32Array([
+                this.map.width,
+                this.map.height,
+                this.map.latitude.min,
+                this.map.latitude.max,
+                this.map.longitude.min,
+                this.map.longitude.max,
+                this.uniforms.markerSize,
+                0, // Unused
+                this.uniforms.markerColor[0] / 255,
+                this.uniforms.markerColor[1] / 255,
+                this.uniforms.markerColor[2] / 255,
+                this.uniforms.markerAlpha,
+            ]),
+        );
 
         const commandEncoder = this.device.createCommandEncoder();
         {
             const renderPass = commandEncoder.beginRenderPass({
-                colorAttachments: [this.colorAttachment]
+                colorAttachments: [{
+                    view: this.context.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: { r: 0, g: 0, b: 0, a: 0 },
+                    storeOp: "store"
+                }]
             });
 
             // Render map
